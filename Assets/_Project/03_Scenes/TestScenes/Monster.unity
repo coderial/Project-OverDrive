@@ -251,6 +251,7 @@ MonoBehaviour:
   _dmgMulti: 0
   _additionalRange: 0
   _magnetRange: 0
+  _currency: 0
   _weaponInfo:
   - {fileID: 0}
   - {fileID: 0}
@@ -473,8 +474,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WaveManager
   player: {fileID: 810704336}
   monsterData: {fileID: 11400000, guid: 91baba79fcafeeb47836e684e05f2551, type: 2}
+  waveStartDelay: 1
   waveDuration: 10
   spawnInterval: 0.25
+  shopTestDuration: 2
 --- !u!1 &1660300181
 GameObject:
   m_ObjectHideFlags: 0
@@ -523,6 +526,9 @@ MonoBehaviour:
   - prefab: {fileID: 718592585719006672, guid: 952d0c96f3001b54b8d5c42eab7e1af8, type: 3}
     initialSize: 64
     maxSize: 256
+  - prefab: {fileID: 8589163003255209784, guid: 4903a4f4d97a245469faffa341e4a138, type: 3}
+    initialSize: 128
+    maxSize: 512
   defaultInitialSize: 16
   defaultMaxSize: 256
 --- !u!1 &1896521431
@@ -626,7 +632,7 @@ Transform:
   m_GameObject: {fileID: 6492158756301953634}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 1
   m_Children: []

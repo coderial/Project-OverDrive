@@ -7,7 +7,7 @@ using ProjectOverdrive.Data;
 namespace ProjectOverdrive.Controllers
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class PlayerController : MonoBehaviour
+    public class PlayerController : MonoBehaviour, IDamageable
     {
         private const int MAX_WEAPON_SLOTS = 6;
 
@@ -39,6 +39,7 @@ namespace ProjectOverdrive.Controllers
         [SerializeField] private float _dmgMulti;
         [SerializeField] private float _additionalRange;
         [SerializeField] private float _magnetRange;
+        [SerializeField, Min(0)] private int _currency;
 
         [Header("Weapon Slots (Max 6)")]
         [SerializeField] private WeaponData[] _weaponInfo = new WeaponData[MAX_WEAPON_SLOTS];
@@ -48,6 +49,7 @@ namespace ProjectOverdrive.Controllers
         private Rigidbody _rb;
         private Vector2 _moveInput;
         private Vector3 _moveDirection;
+        private bool _isDead;
 
         // 외부 프로퍼티
         public int Lv => _lv;
@@ -60,15 +62,18 @@ namespace ProjectOverdrive.Controllers
         public float DmgMulti => _dmgMulti;
         public float AdditionalRange => _additionalRange;
         public float MagnetRange => _magnetRange;
+        public int Currency => _currency;
         public WeaponData[] WeaponInfo => _weaponInfo;
 
         public event Action<int, int> OnHpChanged;
         public event Action<float, float> OnExpChanged;
         public event Action<int> OnLevelUp;
+        public event Action<int> OnCurrencyChanged;
 
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
+            CurrencyPickup.SharedCollector = this;
             if (_spriteRenderer == null) _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
             if (_modelTransform == null) _modelTransform = transform;
 
@@ -121,6 +126,8 @@ namespace ProjectOverdrive.Controllers
             }
 
             _currentHp = _maxHp;
+            _isDead = false;
+            _currency = 0;
             _lv = 1;
             _exp = 0.0f;
             _maxExp = CalculateMaxExp(_lv);
@@ -204,9 +211,24 @@ namespace ProjectOverdrive.Controllers
 
         public void TakeDamage(int damage)
         {
+            if (_isDead || damage <= 0) return;
+
             _currentHp = Mathf.Max(0, _currentHp - damage);
             OnHpChanged?.Invoke(_currentHp, _maxHp);
             if (_currentHp <= 0) Die();
+        }
+
+        public void TakeDamage(float damage, Vector3 hitDirection, float knockback)
+        {
+            if (_isDead || damage <= 0f) return;
+
+            TakeDamage(Mathf.Max(1, Mathf.CeilToInt(damage)));
+
+            if (!_isDead && knockback > 0f && hitDirection.sqrMagnitude > 0.0001f)
+            {
+                hitDirection.y = 0f;
+                _rb.AddForce(hitDirection.normalized * knockback, ForceMode.Impulse);
+            }
         }
 
         public void Heal(int amount)
@@ -224,6 +246,17 @@ namespace ProjectOverdrive.Controllers
                 LevelUp();
             }
             OnExpChanged?.Invoke(_exp, _maxExp);
+        }
+
+        public void AddCurrency(int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            _currency += amount;
+            OnCurrencyChanged?.Invoke(_currency);
         }
 
         private void LevelUp()
@@ -246,8 +279,19 @@ namespace ProjectOverdrive.Controllers
 
         private void Die()
         {
+            if (_isDead) return;
+
+            _isDead = true;
             Debug.Log("[PlayerController] 사망!");
             _rb.linearVelocity = Vector3.zero;
+        }
+
+        private void OnDestroy()
+        {
+            if (CurrencyPickup.SharedCollector == this)
+            {
+                CurrencyPickup.SharedCollector = null;
+            }
         }
 
         #endregion
