@@ -105,3 +105,9 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# AI Agent & Workspace Rule files
+/AGENTS.md
+/GEMINI.md
+/.agents/
+/.agent/
