@@ -17,12 +17,11 @@ MonoBehaviour:
   _weaponPrefab: {fileID: 5677261303479683940, guid: c42074f75bbe93040a3b0f2c2d626142, type: 3}
   _level1Sprite: {fileID: -1294190694, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 342204343, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
-  _level3Sprite: {fileID: -1670610108, guid: 39d6f395756e42642a7a91298e35c1a7, type: 3}
+  _level3Sprite: {fileID: -682933208, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
+  _attackEffectPrefab: {fileID: 0}
   _purchasePrice: 20
   _sellPrice: 10
   _attackType: 0
-  _mixAttackTypes: 0
-  _thrustProbability: 1
   _baseDamage: 15
   _baseAttackSpeed: 1.2
   _baseAttackDistance: 1.5
