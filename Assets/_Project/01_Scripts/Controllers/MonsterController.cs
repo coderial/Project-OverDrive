@@ -77,7 +77,13 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
         }
 
         Vector3 hitPosition = _cachedTransform.position;
+        float appliedDamage = Mathf.Min(CurrentHealth, damage);
         CurrentHealth = Mathf.Max(0f, CurrentHealth - damage);
+
+        if (DamageTextManager.Instance != null)
+        {
+            DamageTextManager.Instance.ShowMonsterDamage(appliedDamage, hitPosition);
+        }
 
         // A lethal hit must drop currency at the visible hit position, before knockback.
         if (CurrentHealth <= 0f)
