@@ -2451,6 +2451,8 @@ MonoBehaviour:
   _level3SellBonusPercent: 30
   _tooltipPanel: {fileID: 1733288125}
   _tooltipText: {fileID: 1887025521}
+  _sellButton: {fileID: 0}
+  _synthesisButton: {fileID: 0}
 --- !u!222 &1083715957
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3204,7 +3206,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: NextWave
+  m_text: "\uB2E4\uC74C \uC6E8\uC774\uBE0C\uB85C"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

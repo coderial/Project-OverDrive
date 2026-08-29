@@ -15,8 +15,8 @@ MonoBehaviour:
   monsterName: "\uBE14\uB7EC\uB514 \uBAAC\uC2A4\uD130"
   prefab: {fileID: 718592585719006672, guid: 299488da02b8a324baaca9c05e1e0e50, type: 3}
   currencyPrefab: {fileID: 8589163003255209784, guid: 4903a4f4d97a245469faffa341e4a138, type: 3}
-  attackPower: 10
+  attackPower: 30
   contactDamageInterval: 0.5
-  maxHealth: 10
-  moveSpeed: 3
+  maxHealth: 20
+  moveSpeed: 3.5
   stoppingDistance: 0.1

@@ -13,19 +13,8 @@ MonoBehaviour:
   m_Name: Wave 3
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WaveData
   duration: 40
-  spawnInterval: 0.5
+  spawnInterval: 0.4
   monsters:
-  - monster: {fileID: 11400000, guid: 91baba79fcafeeb47836e684e05f2551, type: 2}
-    spawnWeight: 1
-    spawnSettings:
-      origin: 0
-      formation: 1
-      countPerBatch: 4
-      formationRadius: 2
-      minimumDistanceFromPlayer: 6
-      maximumDistanceFromPlayer: 12
-      escapeArcDegrees: 90
-      minimumMonsterSpacing: 0.75
   - monster: {fileID: 11400000, guid: 91baba79fcafeeb47836e684e05f2551, type: 2}
     spawnWeight: 3
     spawnSettings:

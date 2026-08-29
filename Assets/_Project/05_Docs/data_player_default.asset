@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eada54b8794108a4ca4371adb5c435fb, type: 3}
   m_Name: data_player_default
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.PlayerData
-  _characterName: Unknown
+  _characterName: "\uB2E4\uC7AC\uB2E4\uB2A5"
   _playerPrefab: {fileID: 1200241804745829709, guid: c16c78ce885bd9c419ae397f0af521e9, type: 3}
   _baseMaxHp: 100
   _baseMoveSpeed: 5
