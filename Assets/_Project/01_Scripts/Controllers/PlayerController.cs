@@ -270,6 +270,16 @@ namespace ProjectOverdrive.Controllers
             return false;
         }
 
+        // 특정 슬롯의 무기를 제거 (상점 판매용)
+        public void RemoveWeapon(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= MAX_WEAPON_SLOTS) return;
+
+            _weaponInfo[slotIndex] = null;
+            _weaponLevels[slotIndex] = 0;
+            SpawnEquippedWeapons(); // 무기 재배치
+        }
+
         private void Die()
         {
             if (_isDead) return;

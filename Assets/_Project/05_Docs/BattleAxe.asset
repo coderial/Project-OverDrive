@@ -14,10 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
   _weaponName: BattleAxe
   _icon: {fileID: 21300000, guid: f435389e6c25b6d4d879069b1969f2ff, type: 2}
-  _weaponPrefab: {fileID: 8881288605572620761, guid: 2e543932d9fb0db4faf0e9cae887b7f4, type: 3}
+  _weaponPrefab: {fileID: 5614840783027111533, guid: 05a772b83f91154458f59e8fc2f93112, type: 3}
   _level1Sprite: {fileID: 1029271361, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 543730695, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level3Sprite: {fileID: -548996493, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
+  _purchasePrice: 50
+  _sellPrice: 25
+  _attackType: 1
   _baseDamage: 10
   _baseAttackSpeed: 2
   _baseAttackDistance: 2

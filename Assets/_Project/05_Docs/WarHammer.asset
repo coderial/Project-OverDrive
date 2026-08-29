@@ -14,10 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
   _weaponName: WarHammer
   _icon: {fileID: 21300000, guid: 301e2b7c9628d9e44825c22adec5d34f, type: 2}
-  _weaponPrefab: {fileID: 1350595531865851273, guid: 5dcc02e87f56e8f4da33451f761fd11a, type: 3}
-  _level1Sprite: {fileID: 21300000, guid: 301e2b7c9628d9e44825c22adec5d34f, type: 2}
+  _weaponPrefab: {fileID: 6230542550903827798, guid: 31e6cee6d37f6f84ebf09f6730e56444, type: 3}
+  _level1Sprite: {fileID: 554712377, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 446642565, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level3Sprite: {fileID: 1078062777, guid: 39d6f395756e42642a7a91298e35c1a7, type: 3}
+  _purchasePrice: 50
+  _sellPrice: 25
+  _attackType: 1
   _baseDamage: 10
   _baseAttackSpeed: 1
   _baseAttackDistance: 1.5
