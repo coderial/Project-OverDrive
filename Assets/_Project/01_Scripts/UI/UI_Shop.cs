@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using TMPro;
 using ProjectOverdrive.Controllers;
 using ProjectOverdrive.Data;
+using ProjectOverdrive.Managers;
 
 namespace ProjectOverdrive.UI
 {
