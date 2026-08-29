@@ -1,37 +1,5 @@
-using System;
 using UnityEngine;
 using UnityEngine.Serialization;
-
-public enum MonsterSpawnPattern
-{
-    Single = 0,
-    Circle_Around_Player = 1,
-    Cluster = 2,
-}
-
-[Serializable]
-public sealed class MonsterSpawnPatternData
-{
-    [SerializeField] private MonsterSpawnPattern pattern = MonsterSpawnPattern.Single;
-    [SerializeField, Min(1)] private int count = 6;
-    [SerializeField, Min(0f)] private float minimumDistanceFromPlayer = 6f;
-    [SerializeField, Min(0f)] private float maximumDistanceFromPlayer = 8f;
-    [SerializeField, Min(0f)] private float clusterRadius = 1.5f;
-
-    public MonsterSpawnPattern Pattern => pattern;
-    public int Count => pattern == MonsterSpawnPattern.Single ? 1 : Mathf.Max(1, count);
-    public float MinimumDistanceFromPlayer => minimumDistanceFromPlayer;
-    public float MaximumDistanceFromPlayer => maximumDistanceFromPlayer;
-    public float ClusterRadius => clusterRadius;
-
-    internal void Validate()
-    {
-        count = Mathf.Max(1, count);
-        minimumDistanceFromPlayer = Mathf.Max(0f, minimumDistanceFromPlayer);
-        maximumDistanceFromPlayer = Mathf.Max(minimumDistanceFromPlayer, maximumDistanceFromPlayer);
-        clusterRadius = Mathf.Max(0f, clusterRadius);
-    }
-}
 
 [CreateAssetMenu(fileName = "MonsterData", menuName = "Project Overdrive/Monster Data")]
 public sealed class MonsterData : ScriptableObject
@@ -60,9 +28,6 @@ public sealed class MonsterData : ScriptableObject
 
     [SerializeField, Min(0f)] private float stoppingDistance = 0.1f;
 
-    [Header("Spawn")]
-    [SerializeField] private MonsterSpawnPatternData spawnPattern = new MonsterSpawnPatternData();
-
     public string MonsterName => monsterName;
     public GameObject Prefab => prefab;
     public GameObject CurrencyPrefab => currencyPrefab;
@@ -71,7 +36,6 @@ public sealed class MonsterData : ScriptableObject
     public float MaxHealth => maxHealth;
     public float MoveSpeed => moveSpeed;
     public float StoppingDistance => stoppingDistance;
-    public MonsterSpawnPatternData SpawnPattern => spawnPattern;
 
     private void OnValidate()
     {
@@ -80,12 +44,5 @@ public sealed class MonsterData : ScriptableObject
         contactDamageInterval = Mathf.Max(0.05f, contactDamageInterval);
         moveSpeed = Mathf.Max(0f, moveSpeed);
         stoppingDistance = Mathf.Max(0f, stoppingDistance);
-
-        if (spawnPattern == null)
-        {
-            spawnPattern = new MonsterSpawnPatternData();
-        }
-
-        spawnPattern.Validate();
     }
 }

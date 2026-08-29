@@ -49,6 +49,7 @@ namespace ProjectOverdrive.Controllers
         private Vector2 _moveInput;
         private Vector3 _moveDirection;
         private bool _isDead;
+        private bool _isMovementEnabled = true;
 
         public int Lv => _lv;
         public float Exp => _exp;
@@ -61,6 +62,7 @@ namespace ProjectOverdrive.Controllers
         public float AdditionalRange => _additionalRange;
         public float MagnetRange => _magnetRange;
         public int Currency => _currency;
+        public bool IsMovementEnabled => _isMovementEnabled;
 
         public WeaponData[] WeaponInfo => _weaponInfo;
         public int[] WeaponLevels => _weaponLevels;
@@ -167,15 +169,47 @@ namespace ProjectOverdrive.Controllers
         public void OnMove(InputValue value)
         {
             _moveInput = value.Get<Vector2>();
-            _moveDirection = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
-            _playerAnimator.UpdateMovement(_moveInput);
+            UpdateMoveDirection();
         }
 
         private void Move()
         {
+            if (!_isMovementEnabled)
+            {
+                StopHorizontalMovement();
+                return;
+            }
+
             Vector3 targetVelocity = _moveDirection * _moveSpeed;
             targetVelocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = targetVelocity;
+        }
+
+        public void SetMovementEnabled(bool isEnabled)
+        {
+            if (_isMovementEnabled == isEnabled) return;
+
+            _isMovementEnabled = isEnabled;
+            UpdateMoveDirection();
+
+            if (!isEnabled) StopHorizontalMovement();
+        }
+
+        private void UpdateMoveDirection()
+        {
+            Vector2 appliedInput = _isMovementEnabled ? _moveInput : Vector2.zero;
+            _moveDirection = new Vector3(appliedInput.x, 0f, appliedInput.y).normalized;
+            if (_playerAnimator != null) _playerAnimator.UpdateMovement(appliedInput);
+        }
+
+        private void StopHorizontalMovement()
+        {
+            if (_rb == null) return;
+
+            Vector3 velocity = _rb.linearVelocity;
+            velocity.x = 0f;
+            velocity.z = 0f;
+            _rb.linearVelocity = velocity;
         }
 
 

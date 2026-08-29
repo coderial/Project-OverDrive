@@ -271,6 +271,16 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
         _target = target;
     }
 
+    public void ForceDespawn()
+    {
+        if (!gameObject.activeInHierarchy) return;
+
+        StopAllCoroutines();
+        _isDead = true;
+        _contactPlayer = null;
+        ReleaseToPool();
+    }
+
     public void OnSpawned()
     {
         _target = SharedTarget;
