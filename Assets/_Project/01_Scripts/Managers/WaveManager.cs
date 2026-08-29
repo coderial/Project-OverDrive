@@ -1,3 +1,5 @@
+using ProjectOverdrive.Controllers;
+using ProjectOverdrive.UI;
 using UnityEngine;
 
 public enum WaveStatus
@@ -13,11 +15,14 @@ public sealed class WaveManager : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private MonsterData monsterData;
 
-    [Header("Test Wave")]
+    [Header("Shop UI Reference")]
+    [Tooltip("씬의 UI_Shop 패널을 여기에 연결해주세요")]
+    [SerializeField] private UI_Shop _shopUI;
+
+    [Header("Test Wave Settings")]
     [SerializeField, Min(0f)] private float waveStartDelay = 1f;
     [SerializeField, Min(0.1f)] private float waveDuration = 10f;
     [SerializeField, Min(0.01f)] private float spawnInterval = 0.25f;
-    [SerializeField, Min(0.1f)] private float shopTestDuration = 2f;
 
     private PoolingManager _poolingManager;
     private WaveStatus _currentStatus = WaveStatus.Preparation;
@@ -30,7 +35,6 @@ public sealed class WaveManager : MonoBehaviour
     public float RemainingTime => _currentStatus == WaveStatus.Spawn_Progress
         ? Mathf.Max(0f, _statusEndTime - Time.time)
         : 0f;
-    public float StatusRemainingTime => Mathf.Max(0f, _statusEndTime - Time.time);
 
     private void Start()
     {
@@ -45,12 +49,9 @@ public sealed class WaveManager : MonoBehaviour
 
         _poolingManager = PoolingManager.Instance;
 
-        if (player == null || monsterData == null || monsterData.Prefab == null ||
-            _poolingManager == null)
+        if (player == null || monsterData == null || monsterData.Prefab == null || _poolingManager == null)
         {
-            Debug.LogError(
-                "WaveManager requires a Player, MonsterData with a Prefab, and PoolingManager.",
-                this);
+            Debug.LogError("WaveManager: Player, MonsterData, PoolingManager가 필요합니다.", this);
             enabled = false;
             return;
         }
@@ -82,19 +83,12 @@ public sealed class WaveManager : MonoBehaviour
                 if (currentTime >= _nextSpawnTime)
                 {
                     SpawnBatch();
-
-                    // Limits catch-up to one batch per frame after an unusually long frame.
-                    _nextSpawnTime = Mathf.Max(
-                        _nextSpawnTime + spawnInterval,
-                        currentTime + 0.001f);
+                    _nextSpawnTime = Mathf.Max(_nextSpawnTime + spawnInterval, currentTime + 0.001f);
                 }
                 break;
 
             case WaveStatus.Open_Shop:
-                if (currentTime >= _statusEndTime)
-                {
-                    CloseShop();
-                }
+                // 상점 상태에서는 자동 종료 타이머를 돌리지 않고 플레이어의 '다음 웨이브' 버튼 입력을 대기합니다.
                 break;
         }
     }
@@ -107,19 +101,17 @@ public sealed class WaveManager : MonoBehaviour
         _statusEndTime = currentTime + waveStartDelay;
         IsWaveRunning = true;
 
-        Debug.Log(
-            $"[WaveManager] Wave {CurrentWave} 시작 - {waveStartDelay:0.##}초 동안 스폰 대기.",
-            this);
+        Debug.Log($"[WaveManager] Wave {CurrentWave} 시작 - {waveStartDelay:0.##}초 대기 후 몬스터 스폰.", this);
     }
 
+    /// <summary>
+    /// UI_Shop의 '다음 웨이브 시작' 버튼에서 호출
+    /// </summary>
     public void CloseShop()
     {
-        if (_currentStatus != WaveStatus.Open_Shop)
-        {
-            return;
-        }
+        if (_currentStatus != WaveStatus.Open_Shop) return;
 
-        Debug.Log($"[WaveManager] 상점 종료 - 다음 웨이브를 시작합니다.", this);
+        Debug.Log($"[WaveManager] 상점 종료 - Wave {CurrentWave + 1}을 시작합니다.", this);
         BeginWave();
     }
 
@@ -129,20 +121,30 @@ public sealed class WaveManager : MonoBehaviour
         _statusEndTime = currentTime + waveDuration;
         _nextSpawnTime = currentTime;
 
-        Debug.Log($"[WaveManager] Wave {CurrentWave} 몬스터 스폰 시작.", this);
+        Debug.Log($"[WaveManager] Wave {CurrentWave} 몬스터 스폰 시작 (지속 시간: {waveDuration}초).", this);
     }
 
     private void OpenShop(float currentTime)
     {
         _currentStatus = WaveStatus.Open_Shop;
-        _statusEndTime = currentTime + shopTestDuration;
         IsWaveRunning = false;
 
-        Debug.Log(
-            $"[WaveManager] Wave {CurrentWave} 종료 - 상점 오픈 " +
-            $"(테스트 자동 종료: {shopTestDuration:0.##}초).",
-            this);
+        Debug.Log($"[WaveManager] Wave {CurrentWave} 클리어! 상점을 오픈합니다.", this);
+
+        if (player != null && player.TryGetComponent<PlayerController>(out var playerController))
+        {
+            if (_shopUI != null)
+            {
+                _shopUI.OpenShop(playerController, this);
+            }
+            else
+            {
+                Debug.LogWarning("[WaveManager] _shopUI가 연결되지 않았습니다. 인스펙터에서 UI_Shop을 연결해주세요.");
+            }
+        }
     }
+
+    #region Monster Spawning Logic
 
     private void SpawnBatch()
     {
@@ -154,15 +156,12 @@ public sealed class WaveManager : MonoBehaviour
             case MonsterSpawnPattern.Single:
                 SpawnSingle(playerPosition, patternData);
                 break;
-
             case MonsterSpawnPattern.Circle_Around_Player:
                 SpawnCircle(playerPosition, patternData);
                 break;
-
             case MonsterSpawnPattern.Cluster:
                 SpawnCluster(playerPosition, patternData);
                 break;
-
             default:
                 SpawnSingle(playerPosition, patternData);
                 break;
@@ -172,34 +171,27 @@ public sealed class WaveManager : MonoBehaviour
     private void SpawnSingle(Vector3 playerPosition, MonsterSpawnPatternData patternData)
     {
         float angle = Random.value * Mathf.PI * 2f;
-        float radius = Random.Range(
-            patternData.MinimumDistanceFromPlayer,
-            patternData.MaximumDistanceFromPlayer);
-
+        float radius = Random.Range(patternData.MinimumDistanceFromPlayer, patternData.MaximumDistanceFromPlayer);
         SpawnMonsterAt(GetPointOnCircle(playerPosition, angle, radius));
     }
 
     private void SpawnCircle(Vector3 playerPosition, MonsterSpawnPatternData patternData)
     {
         int count = patternData.Count;
-        float radius = Random.Range(
-            patternData.MinimumDistanceFromPlayer,
-            patternData.MaximumDistanceFromPlayer);
+        float radius = Random.Range(patternData.MinimumDistanceFromPlayer, patternData.MaximumDistanceFromPlayer);
         float angleStep = 360f / count;
 
         for (int i = 0; i < count; i++)
         {
             float angle = i * angleStep * Mathf.Deg2Rad;
-            SpawnMonsterAt(GetPointOnCircle(playerPosition , angle, radius));
+            SpawnMonsterAt(GetPointOnCircle(playerPosition, angle, radius));
         }
     }
 
     private void SpawnCluster(Vector3 playerPosition, MonsterSpawnPatternData patternData)
     {
         float centerAngle = Random.value * Mathf.PI * 2f;
-        float centerRadius = Random.Range(
-            patternData.MinimumDistanceFromPlayer,
-            patternData.MaximumDistanceFromPlayer);
+        float centerRadius = Random.Range(patternData.MinimumDistanceFromPlayer, patternData.MaximumDistanceFromPlayer);
         Vector3 clusterCenter = GetPointOnCircle(playerPosition, centerAngle, centerRadius);
 
         for (int i = 0; i < patternData.Count; i++)
@@ -221,7 +213,7 @@ public sealed class WaveManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"{prefab.name} requires a MonsterController.", prefab);
+            Debug.LogError($"{prefab.name}에 MonsterController가 없습니다.", prefab);
             _poolingManager.Release(instance);
         }
     }
@@ -232,4 +224,6 @@ public sealed class WaveManager : MonoBehaviour
         center.z += Mathf.Sin(angle) * radius;
         return center;
     }
+
+    #endregion
 }
