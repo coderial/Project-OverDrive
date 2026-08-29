@@ -15,8 +15,6 @@ namespace ProjectOverdrive.Controllers
         private PlayerController _owner;
         private int _weaponLevel = 1;
         private float _orbitAngleDeg;
-        private float _fixedXRotationDeg;
-        private float _fixedYRotationDeg;
         private float _cooldownTimer = 0f;
         private bool _isAttacking = false;
 
@@ -37,7 +35,7 @@ namespace ProjectOverdrive.Controllers
             _enemyLayer = enemyLayer;
             _orbitRadius = orbitRadius;
 
-            // [추가된 로직] 레벨에 맞는 무기 스프라이트(외형) 씌우기
+            // 레벨에 맞는 무기 스프라이트(외형) 씌우기
             SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
             if (sr != null && _weaponData != null)
             {
@@ -67,27 +65,8 @@ namespace ProjectOverdrive.Controllers
             Vector3 offset = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * _orbitRadius;
             offset.y = _orbitHeight + Mathf.Sin(Time.time * 3f + _orbitAngleDeg) * 0.1f;
 
+            // 회전(rotation) 로직 제거됨 - 오직 위치만 갱신
             transform.position = _owner.transform.position + offset;
-        }
-
-        private Quaternion GetFacingRotation(Vector3 direction)
-        {
-            return Quaternion.LookRotation(direction, Vector3.up)
-                * Quaternion.Euler(_fixedXRotationDeg, _fixedYRotationDeg, 0f);
-        }
-
-        private static Vector3 GetScreenUpDirection()
-        {
-            Camera mainCamera = Camera.main;
-            if (mainCamera == null)
-            {
-                return Vector3.forward;
-            }
-
-            Vector3 screenUpDirection = Vector3.ProjectOnPlane(mainCamera.transform.up, Vector3.up);
-            return screenUpDirection.sqrMagnitude > 0.001f
-                ? screenUpDirection.normalized
-                : Vector3.forward;
         }
 
         private void CheckAndAttackNearestEnemy()
@@ -129,7 +108,7 @@ namespace ProjectOverdrive.Controllers
             targetDir.y = 0;
             targetDir.Normalize();
 
-            transform.rotation = GetFacingRotation(targetDir);
+            // 방향 회전(transform.rotation) 제거됨 - 프리팹 원본 회전값 유지
 
             Vector3 thrustTarget = startPos + targetDir * (EffectiveDistance * 0.8f);
             float elapsed = 0f;
@@ -163,6 +142,7 @@ namespace ProjectOverdrive.Controllers
                 transform.position = Vector3.Lerp(currentThrustPos, currentOrbitTarget, t);
                 yield return null;
             }
+
             _isAttacking = false;
         }
 
