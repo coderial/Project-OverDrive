@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eada54b8794108a4ca4371adb5c435fb, type: 3}
+  m_Name: TestPlayerData
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.PlayerData
+  _characterName: Unknown
+  _playerPrefab: {fileID: 1200241804745829709, guid: c16c78ce885bd9c419ae397f0af521e9, type: 3}
+  _baseMaxHp: 100
+  _baseMoveSpeed: 5
+  _baseAttackSpeed: 1
+  _baseDmgMulti: 1
+  _baseAdditionalRange: 0
+  _baseMagnetRange: 2.5
+  _initialWeapons:
+  - {fileID: 11400000, guid: 750e3bbdd6ae6bc4cb9fbcca563db833, type: 2}
+  - {fileID: 11400000, guid: fe2d8cd6e53326844995b8347240b47f, type: 2}
+  - {fileID: 11400000, guid: 9caa7f7b2690d42419962863110b9221, type: 2}
+  - {fileID: 11400000, guid: f9beb841679cf184087b6e53591e1b85, type: 2}
+  - {fileID: 11400000, guid: bd21c149efb175f429e9fb97619df357, type: 2}
+  - {fileID: 11400000, guid: 2e8e9ebbebafe874481db072efddf4d5, type: 2}

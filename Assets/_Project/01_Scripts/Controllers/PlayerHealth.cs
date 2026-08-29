@@ -1,3 +1,4 @@
+using ProjectOverdrive.Managers;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -52,7 +53,7 @@ namespace ProjectOverdrive.Controllers
             {
                 return;
             }
-
+            SoundManager.Instance.PlaySfx("Hurt");
             int roundedDamage = Mathf.Max(1, Mathf.CeilToInt(damage));
             int appliedDamage = Mathf.Min(CurrentHp, roundedDamage);
             CurrentHp = Mathf.Max(0, CurrentHp - roundedDamage);
@@ -141,6 +142,7 @@ namespace ProjectOverdrive.Controllers
                 return;
             }
 
+            SoundManager.Instance.PlaySfx("Lose");
             IsDead = true;
             if (_rigidbody != null)
             {
