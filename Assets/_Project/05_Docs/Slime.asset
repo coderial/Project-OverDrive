@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 108bbd125b5c3cc43861dfd5049cc794, type: 3}
-  m_Name: DefaultMonsterData
+  m_Name: Slime
   m_EditorClassIdentifier: Assembly-CSharp::MonsterData
-  monsterName: "\uAE30\uBCF8 \uBAAC\uC2A4\uD130"
+  monsterName: "\uC2AC\uB77C\uC784"
   prefab: {fileID: 718592585719006672, guid: 952d0c96f3001b54b8d5c42eab7e1af8, type: 3}
   currencyPrefab: {fileID: 8589163003255209784, guid: 4903a4f4d97a245469faffa341e4a138, type: 3}
   attackPower: 10
@@ -20,9 +20,3 @@ MonoBehaviour:
   maxHealth: 10
   moveSpeed: 3
   stoppingDistance: 0.1
-  spawnPattern:
-    pattern: 0
-    count: 6
-    minimumDistanceFromPlayer: 6
-    maximumDistanceFromPlayer: 8
-    clusterRadius: 1.5

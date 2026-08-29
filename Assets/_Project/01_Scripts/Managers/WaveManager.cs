@@ -1,74 +1,69 @@
+using System.Collections;
 using ProjectOverdrive.Controllers;
+using ProjectOverdrive.Data;
 using ProjectOverdrive.UI;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-namespace ProjectOverdrive.Managers // 네임스페이스 규칙 적용
+namespace ProjectOverdrive.Managers
 {
     public enum WaveStatus
     {
         Preparation = 1,
         Spawn_Progress = 2,
         Open_Shop = 3,
-        Game_Clear = 4 // 10웨이브 클리어 시 상태 추가
+        Game_Clear = 4,
+        Wave_Clear = 5,
     }
 
+    [DisallowMultipleComponent]
     public sealed class WaveManager : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private Transform player;
-        [SerializeField] private MonsterData monsterData;
+        [SerializeField] private SpawnManager spawnManager;
 
         [Header("Shop UI Reference")]
-        [Tooltip("씬의 UI_Shop 패널을 여기에 연결해주세요")]
-        [SerializeField] private UI_Shop _shopUI;
+        [Tooltip("씬의 UI_Shop 패널을 여기에 연결해주세요.")]
+        [FormerlySerializedAs("_shopUI")]
+        [SerializeField] private UI_Shop shopUI;
 
-        [Header("Wave Settings")]
+        [Header("Wave Clear Presentation")]
+        [SerializeField] private UI_WaveClear waveClearUI;
+        [SerializeField, Min(0.01f)] private float currencyCollectionDuration = 0.75f;
+
+        [Header("Wave Sequence")]
+        [Tooltip("실행할 순서대로 WaveData를 등록합니다.")]
+        [SerializeField] private WaveData[] waves = new WaveData[0];
         [SerializeField, Min(0f)] private float waveStartDelay = 1f;
-        [SerializeField, Min(0.01f)] private float spawnInterval = 0.25f;
 
-        [Header("Brotato Style Wave Durations")]
-        [Tooltip("1~10웨이브 각각의 진행 시간 (총합 600초 = 10분)")]
-        [SerializeField]
-        private float[] _waveDurations = new float[]
-        {
-            20f, 30f, 40f, 50f, 60f, 70f, 75f, 80f, 85f, 90f
-        };
-
-        private PoolingManager _poolingManager;
         private WaveStatus _currentStatus = WaveStatus.Preparation;
+        private WaveData _currentWaveData;
+        private PlayerController _playerController;
         private float _statusEndTime;
         private float _nextSpawnTime;
 
         public WaveStatus CurrentStatus => _currentStatus;
+        public WaveData CurrentWaveData => _currentWaveData;
         public int CurrentWave { get; private set; }
         public bool IsWaveRunning { get; private set; }
 
-        // UI에서 가져다 쓸 남은 시간 프로퍼티
         public float RemainingTime => _currentStatus == WaveStatus.Spawn_Progress
             ? Mathf.Max(0f, _statusEndTime - Time.time)
             : 0f;
 
         private void Start()
         {
-            if (player == null)
-            {
-                GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
-                if (playerObject != null)
-                {
-                    player = playerObject.transform;
-                }
-            }
+            ResolveReferences();
 
-            _poolingManager = PoolingManager.Instance;
-
-            if (player == null || monsterData == null || monsterData.Prefab == null || _poolingManager == null)
+            if (!ValidateConfiguration())
             {
-                Debug.LogError("WaveManager: Player, MonsterData, PoolingManager가 필요합니다.", this);
+                _playerController?.SetMovementEnabled(false);
                 enabled = false;
                 return;
             }
 
-            MonsterController.SharedTarget = player;
+            spawnManager.Initialize(player);
             BeginWave();
         }
 
@@ -79,51 +74,48 @@ namespace ProjectOverdrive.Managers // 네임스페이스 규칙 적용
             switch (_currentStatus)
             {
                 case WaveStatus.Preparation:
-                    if (currentTime >= _statusEndTime)
-                    {
-                        StartSpawnProgress(currentTime);
-                    }
+                    if (currentTime >= _statusEndTime) StartSpawnProgress(currentTime);
                     break;
 
                 case WaveStatus.Spawn_Progress:
                     if (currentTime >= _statusEndTime)
                     {
-                        OpenShop(currentTime);
-                        break;
+                        BeginWaveClear();
                     }
-
-                    if (currentTime >= _nextSpawnTime)
+                    else if (currentTime >= _nextSpawnTime)
                     {
-                        SpawnBatch();
-                        _nextSpawnTime = Mathf.Max(_nextSpawnTime + spawnInterval, currentTime + 0.001f);
+                        spawnManager.SpawnBatch(_currentWaveData);
+                        _nextSpawnTime = Mathf.Max(
+                            _nextSpawnTime + _currentWaveData.SpawnInterval,
+                            currentTime + 0.001f);
                     }
                     break;
 
                 case WaveStatus.Open_Shop:
-                    // 상점 상태에서는 자동 종료 타이머를 돌리지 않고 입력을 대기합니다.
+                case WaveStatus.Game_Clear:
+                case WaveStatus.Wave_Clear:
                     break;
             }
         }
 
         public void BeginWave()
         {
-            float currentTime = Time.time;
-            CurrentWave++;
-
-            // 10웨이브 초과 시 게임 클리어 처리
-            if (CurrentWave > _waveDurations.Length)
+            if (waves == null || CurrentWave >= waves.Length)
             {
-                _currentStatus = WaveStatus.Game_Clear;
+                _currentWaveData = null;
+                ChangeStatus(WaveStatus.Game_Clear);
                 IsWaveRunning = false;
-                Debug.Log("<color=green>[WaveManager] 모든 웨이브(10)를 클리어했습니다! 게임 승리!</color>");
+                Debug.Log($"<color=green>[WaveManager] 모든 웨이브({CurrentWave})를 클리어했습니다.</color>", this);
                 return;
             }
 
-            _currentStatus = WaveStatus.Preparation;
-            _statusEndTime = currentTime + waveStartDelay;
+            _currentWaveData = waves[CurrentWave];
+            CurrentWave++;
+            ChangeStatus(WaveStatus.Preparation);
+            _statusEndTime = Time.time + waveStartDelay;
             IsWaveRunning = true;
 
-            Debug.Log($"[WaveManager] Wave {CurrentWave} 시작 준비.", this);
+            Debug.Log($"[WaveManager] Wave {CurrentWave} 시작 준비: {_currentWaveData.name}", this);
         }
 
         public void CloseShop()
@@ -136,117 +128,177 @@ namespace ProjectOverdrive.Managers // 네임스페이스 규칙 적용
 
         private void StartSpawnProgress(float currentTime)
         {
-            _currentStatus = WaveStatus.Spawn_Progress;
+            if (!spawnManager.CanSpawn(_currentWaveData, out string reason))
+            {
+                Debug.LogError($"[WaveManager] Wave {CurrentWave}를 시작할 수 없습니다: {reason}", this);
+                _playerController?.SetMovementEnabled(false);
+                enabled = false;
+                IsWaveRunning = false;
+                return;
+            }
 
-            // 배열 인덱스는 0부터 시작하므로 (CurrentWave - 1)
-            float duration = _waveDurations[CurrentWave - 1];
-            _statusEndTime = currentTime + duration;
+            ChangeStatus(WaveStatus.Spawn_Progress);
+            _statusEndTime = currentTime + _currentWaveData.Duration;
             _nextSpawnTime = currentTime;
 
-            Debug.Log($"[WaveManager] Wave {CurrentWave} 몬스터 스폰 시작 (지속 시간: {duration}초).", this);
+            Debug.Log(
+                $"[WaveManager] Wave {CurrentWave} 스폰 시작 " +
+                $"(지속 {_currentWaveData.Duration:0.##}초, 간격 {_currentWaveData.SpawnInterval:0.##}초).",
+                this);
         }
 
-        private void OpenShop(float currentTime)
+        private void BeginWaveClear()
         {
-            _currentStatus = WaveStatus.Open_Shop;
+            spawnManager.CancelPendingSpawns();
+            ChangeStatus(WaveStatus.Wave_Clear);
+            IsWaveRunning = false;
+            StartCoroutine(PlayWaveClearSequence());
+        }
+
+        private IEnumerator PlayWaveClearSequence()
+        {
+            int removedMonsterCount = spawnManager.DespawnAllMonsters();
+            Debug.Log($"[WaveManager] 남은 몬스터 {removedMonsterCount}마리를 제거했습니다.", this);
+
+            if (player != null && player.TryGetComponent(out PlayerController playerController))
+            {
+                yield return CollectAllCurrency(playerController);
+            }
+
+            if (waveClearUI != null)
+            {
+                yield return waveClearUI.Play(CurrentWave);
+            }
+
+            OpenShop();
+        }
+
+        private IEnumerator CollectAllCurrency(PlayerController playerController)
+        {
+            CurrencyPickup[] pickups = FindObjectsByType<CurrencyPickup>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+
+            if (pickups.Length == 0) yield break;
+
+            for (int i = 0; i < pickups.Length; i++)
+            {
+                if (pickups[i] != null)
+                {
+                    pickups[i].BeginWaveEndCollection(playerController, currencyCollectionDuration);
+                }
+            }
+
+            float collectionEndTime = Time.unscaledTime + currencyCollectionDuration + 0.1f;
+            while (Time.unscaledTime < collectionEndTime)
+            {
+                bool hasActivePickup = false;
+                for (int i = 0; i < pickups.Length; i++)
+                {
+                    if (pickups[i] != null && pickups[i].gameObject.activeInHierarchy)
+                    {
+                        hasActivePickup = true;
+                        break;
+                    }
+                }
+
+                if (!hasActivePickup) yield break;
+                yield return null;
+            }
+
+            for (int i = 0; i < pickups.Length; i++)
+            {
+                if (pickups[i] != null && pickups[i].gameObject.activeInHierarchy)
+                {
+                    pickups[i].CompleteWaveEndCollection();
+                }
+            }
+        }
+
+        private void OpenShop()
+        {
+            spawnManager.CancelPendingSpawns();
+            ChangeStatus(WaveStatus.Open_Shop);
             IsWaveRunning = false;
 
-            Debug.Log($"[WaveManager] Wave {CurrentWave} 클리어! 상점을 오픈합니다.", this);
+            Debug.Log($"[WaveManager] Wave {CurrentWave} 종료. 상점을 오픈합니다.", this);
 
-            if (player != null && player.TryGetComponent<PlayerController>(out var playerController))
+            if (player != null && player.TryGetComponent(out PlayerController playerController))
             {
-                if (_shopUI != null)
+                if (shopUI != null)
                 {
-                    _shopUI.OpenShop(playerController, this);
+                    shopUI.OpenShop(playerController, this);
                 }
                 else
                 {
-                    Debug.LogWarning("[WaveManager] _shopUI가 연결되지 않았습니다. 인스펙터에서 UI_Shop을 연결해주세요.");
+                    Debug.LogWarning("[WaveManager] Shop UI가 연결되지 않았습니다.", this);
                 }
             }
         }
 
-        #region Monster Spawning Logic
-
-        private void SpawnBatch()
+        private void ResolveReferences()
         {
-            MonsterSpawnPatternData patternData = monsterData.SpawnPattern;
-            Vector3 playerPosition = player.position;
-
-            switch (patternData.Pattern)
+            if (player == null)
             {
-                case MonsterSpawnPattern.Single:
-                    SpawnSingle(playerPosition, patternData);
-                    break;
-                case MonsterSpawnPattern.Circle_Around_Player:
-                    SpawnCircle(playerPosition, patternData);
-                    break;
-                case MonsterSpawnPattern.Cluster:
-                    SpawnCluster(playerPosition, patternData);
-                    break;
-                default:
-                    SpawnSingle(playerPosition, patternData);
-                    break;
+                GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
+                if (playerObject != null) player = playerObject.transform;
             }
+
+            if (spawnManager == null) TryGetComponent(out spawnManager);
+            if (waveClearUI == null) TryGetComponent(out waveClearUI);
+            if (player != null) player.TryGetComponent(out _playerController);
         }
 
-        private void SpawnSingle(Vector3 playerPosition, MonsterSpawnPatternData patternData)
+        private void ChangeStatus(WaveStatus status)
         {
-            float angle = Random.value * Mathf.PI * 2f;
-            float radius = Random.Range(patternData.MinimumDistanceFromPlayer, patternData.MaximumDistanceFromPlayer);
-            SpawnMonsterAt(GetPointOnCircle(playerPosition, angle, radius));
+            _currentStatus = status;
+            bool canMove = status == WaveStatus.Preparation || status == WaveStatus.Spawn_Progress;
+            _playerController?.SetMovementEnabled(canMove);
         }
 
-        private void SpawnCircle(Vector3 playerPosition, MonsterSpawnPatternData patternData)
+        private bool ValidateConfiguration()
         {
-            int count = patternData.Count;
-            float radius = Random.Range(patternData.MinimumDistanceFromPlayer, patternData.MaximumDistanceFromPlayer);
-            float angleStep = 360f / count;
-
-            for (int i = 0; i < count; i++)
+            if (player == null || _playerController == null || spawnManager == null || PoolingManager.Instance == null)
             {
-                float angle = i * angleStep * Mathf.Deg2Rad;
-                SpawnMonsterAt(GetPointOnCircle(playerPosition, angle, radius));
+                Debug.LogError("[WaveManager] PlayerController, SpawnManager, PoolingManager가 필요합니다.", this);
+                return false;
             }
-        }
 
-        private void SpawnCluster(Vector3 playerPosition, MonsterSpawnPatternData patternData)
-        {
-            float centerAngle = Random.value * Mathf.PI * 2f;
-            float centerRadius = Random.Range(patternData.MinimumDistanceFromPlayer, patternData.MaximumDistanceFromPlayer);
-            Vector3 clusterCenter = GetPointOnCircle(playerPosition, centerAngle, centerRadius);
-
-            for (int i = 0; i < patternData.Count; i++)
+            if (waveClearUI == null)
             {
-                float localAngle = Random.value * Mathf.PI * 2f;
-                float localRadius = Mathf.Sqrt(Random.value) * patternData.ClusterRadius;
-                SpawnMonsterAt(GetPointOnCircle(clusterCenter, localAngle, localRadius));
+                Debug.LogError("[WaveManager] UI_WaveClear가 필요합니다.", this);
+                return false;
             }
-        }
 
-        private void SpawnMonsterAt(Vector3 position)
-        {
-            GameObject prefab = monsterData.Prefab;
-            GameObject instance = _poolingManager.Get(prefab, position, prefab.transform.rotation);
-
-            if (instance.TryGetComponent(out MonsterController monster))
+            if (waves == null || waves.Length == 0)
             {
-                monster.Configure(monsterData, player);
+                Debug.LogError("[WaveManager] WaveData 배열이 비어 있습니다.", this);
+                return false;
             }
-            else
+
+            for (int i = 0; i < waves.Length; i++)
             {
-                Debug.LogError($"{prefab.name}에 MonsterController가 없습니다.", prefab);
-                _poolingManager.Release(instance);
+                if (waves[i] == null)
+                {
+                    Debug.LogError($"[WaveManager] Wave {i + 1}의 WaveData가 비어 있습니다.", this);
+                    return false;
+                }
+
+                if (!waves[i].IsValid(out string reason))
+                {
+                    Debug.LogError($"[WaveManager] {waves[i].name} 설정 오류: {reason}", waves[i]);
+                    return false;
+                }
             }
+
+            return true;
         }
 
-        private static Vector3 GetPointOnCircle(Vector3 center, float angle, float radius)
+        private void OnValidate()
         {
-            center.x += Mathf.Cos(angle) * radius;
-            center.z += Mathf.Sin(angle) * radius;
-            return center;
+            waveStartDelay = Mathf.Max(0f, waveStartDelay);
+            currencyCollectionDuration = Mathf.Max(0.01f, currencyCollectionDuration);
+            waves ??= new WaveData[0];
         }
-
-        #endregion
     }
 }

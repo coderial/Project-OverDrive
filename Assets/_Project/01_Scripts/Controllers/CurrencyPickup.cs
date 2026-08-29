@@ -19,6 +19,11 @@ namespace ProjectOverdrive.Controllers
         private bool _isCollected;
         private float _collectionDistanceSquared;
         private float _attractionStartTime;
+        private bool _isWaveEndCollection;
+        private float _waveEndCollectionStartTime;
+        private float _waveEndCollectionDuration;
+        private Vector3 _waveEndStartPosition;
+        private PlayerController _waveEndCollector;
 
         private void Awake()
         {
@@ -32,6 +37,12 @@ namespace ProjectOverdrive.Controllers
             PlayerController collector = SharedCollector;
             if (_isCollected || collector == null || Time.time < _attractionStartTime)
             {
+                return;
+            }
+
+            if (_isWaveEndCollection)
+            {
+                UpdateWaveEndCollection();
                 return;
             }
 
@@ -70,6 +81,8 @@ namespace ProjectOverdrive.Controllers
             _isAttracted = false;
             _isCollected = false;
             _attractionStartTime = Time.time + attractionDelay;
+            _isWaveEndCollection = false;
+            _waveEndCollector = null;
         }
 
         public void OnDespawned()
@@ -77,6 +90,44 @@ namespace ProjectOverdrive.Controllers
             _isAttracted = false;
             _isCollected = false;
             _attractionStartTime = 0f;
+            _isWaveEndCollection = false;
+            _waveEndCollector = null;
+        }
+
+        public void BeginWaveEndCollection(PlayerController collector, float duration)
+        {
+            if (_isCollected || collector == null) return;
+
+            _waveEndCollector = collector;
+            _waveEndStartPosition = _cachedTransform.position;
+            _waveEndCollectionStartTime = Time.unscaledTime;
+            _waveEndCollectionDuration = Mathf.Max(0.01f, duration);
+            _isWaveEndCollection = true;
+            _isAttracted = true;
+            _attractionStartTime = 0f;
+        }
+
+        public void CompleteWaveEndCollection()
+        {
+            if (!_isCollected && _waveEndCollector != null) Collect(_waveEndCollector);
+        }
+
+        private void UpdateWaveEndCollection()
+        {
+            if (_waveEndCollector == null)
+            {
+                _isWaveEndCollection = false;
+                return;
+            }
+
+            float t = Mathf.Clamp01(
+                (Time.unscaledTime - _waveEndCollectionStartTime) / _waveEndCollectionDuration);
+            float easedT = 1f - Mathf.Pow(1f - t, 3f);
+            Vector3 targetPosition = _waveEndCollector.transform.position;
+            targetPosition.y = _waveEndStartPosition.y;
+            _cachedTransform.position = Vector3.LerpUnclamped(_waveEndStartPosition, targetPosition, easedT);
+
+            if (t >= 1f) Collect(_waveEndCollector);
         }
 
         private void Collect(PlayerController collector)
