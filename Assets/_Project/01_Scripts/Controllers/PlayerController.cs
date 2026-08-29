@@ -10,6 +10,21 @@ namespace ProjectOverdrive.Controllers
     public class PlayerController : MonoBehaviour, IDamageable
     {
         private const int MAX_WEAPON_SLOTS = 6;
+        private const float FRONT_IDLE_BLEND = 0.0f;
+        private const float BACK_IDLE_BLEND = 0.2f;
+        private const float SIDE_IDLE_BLEND = 0.4f;
+        private const float FRONT_WALK_BLEND = 0.6f;
+        private const float BACK_WALK_BLEND = 0.8f;
+        private const float SIDE_WALK_BLEND = 1.0f;
+
+        private static readonly int BlendParameterHash = Animator.StringToHash("Blend");
+
+        private enum FacingDirection
+        {
+            Front,
+            Side,
+            Back
+        }
 
         [Header("Data Asset")]
         [SerializeField] private PlayerData _playerData;
@@ -25,7 +40,8 @@ namespace ProjectOverdrive.Controllers
         [Header("Visual Components")]
         [SerializeField] private Transform _modelTransform;
         [SerializeField] private SpriteRenderer _spriteRenderer;
-        [SerializeField] private float _rotationSpeed = 15.0f;
+        [SerializeField] private Animator _animator;
+        //[SerializeField] private float _rotationSpeed = 15.0f;
 
         [Header("Runtime Status")]
         [SerializeField] private int _lv = 1;
@@ -49,6 +65,7 @@ namespace ProjectOverdrive.Controllers
         private Rigidbody _rb;
         private Vector2 _moveInput;
         private Vector3 _moveDirection;
+        private FacingDirection _facingDirection = FacingDirection.Front;
         private bool _isDead;
 
         public int Lv => _lv;
@@ -76,9 +93,11 @@ namespace ProjectOverdrive.Controllers
             _rb = GetComponent<Rigidbody>();
             CurrencyPickup.SharedCollector = this;
             if (_spriteRenderer == null) _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            if (_animator == null) _animator = GetComponentInChildren<Animator>();
             if (_modelTransform == null) _modelTransform = transform;
 
             InitializeStats();
+            UpdateMovementAnimation(Vector2.zero);
         }
 
         private void Start()
@@ -89,11 +108,6 @@ namespace ProjectOverdrive.Controllers
         private void FixedUpdate()
         {
             Move();
-        }
-
-        private void Update()
-        {
-            RotateVisual();
         }
 
         public void InitializeStats()
@@ -158,7 +172,7 @@ namespace ProjectOverdrive.Controllers
 
                 if (prefab == null) continue;
 
-                GameObject weaponObj = Instantiate(prefab, transform.position, Quaternion.identity);
+                GameObject weaponObj = Instantiate(prefab, transform.position, prefab.transform.rotation);
                 if (!weaponObj.TryGetComponent<MeleeWeapon>(out var meleeComp))
                     meleeComp = weaponObj.AddComponent<MeleeWeapon>();
 
@@ -179,21 +193,69 @@ namespace ProjectOverdrive.Controllers
                 _spriteRenderer.flipX = _moveInput.x < 0f;
         }
 
+        private void UpdateMovementAnimation(Vector2 moveInput)
+        {
+            bool isWalking = moveInput.sqrMagnitude > 0.001f;
+
+            if (isWalking)
+            {
+                if (Mathf.Abs(moveInput.x) >= Mathf.Abs(moveInput.y))
+                {
+                    _facingDirection = FacingDirection.Side;
+
+                    if (_spriteRenderer != null)
+                    {
+                        _spriteRenderer.flipX = moveInput.x < 0f;
+                    }
+                }
+                else
+                {
+                    _facingDirection = moveInput.y > 0f
+                        ? FacingDirection.Back
+                        : FacingDirection.Front;
+
+                    if (_spriteRenderer != null)
+                    {
+                        _spriteRenderer.flipX = false;
+                    }
+                }
+            }
+
+            if (_animator != null)
+            {
+                _animator.SetFloat(BlendParameterHash, GetMovementBlend(_facingDirection, isWalking));
+            }
+        }
+
+        private static float GetMovementBlend(FacingDirection facingDirection, bool isWalking)
+        {
+            if (isWalking)
+            {
+                return facingDirection switch
+                {
+                    FacingDirection.Back => BACK_WALK_BLEND,
+                    FacingDirection.Side => SIDE_WALK_BLEND,
+                    _ => FRONT_WALK_BLEND
+                };
+            }
+
+            return facingDirection switch
+            {
+                FacingDirection.Back => BACK_IDLE_BLEND,
+                FacingDirection.Side => SIDE_IDLE_BLEND,
+                _ => FRONT_IDLE_BLEND
+            };
+        }
+
         private void Move()
         {
             Vector3 targetVelocity = _moveDirection * _moveSpeed;
             targetVelocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = targetVelocity;
         }
+        #endregion
 
-        private void RotateVisual()
-        {
-            if (_moveDirection.sqrMagnitude > 0.01f && _modelTransform != null)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(_moveDirection, Vector3.up);
-                _modelTransform.rotation = Quaternion.Slerp(_modelTransform.rotation, targetRotation, _rotationSpeed * Time.deltaTime);
-            }
-        }
+        #region Combat & Progression
 
         public void TakeDamage(int damage)
         {

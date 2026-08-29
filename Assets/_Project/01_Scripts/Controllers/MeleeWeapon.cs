@@ -15,6 +15,8 @@ namespace ProjectOverdrive.Controllers
         private PlayerController _owner;
         private int _weaponLevel = 1;
         private float _orbitAngleDeg;
+        private float _fixedXRotationDeg;
+        private float _fixedYRotationDeg;
         private float _cooldownTimer = 0f;
         private bool _isAttacking = false;
 
@@ -66,13 +68,26 @@ namespace ProjectOverdrive.Controllers
             offset.y = _orbitHeight + Mathf.Sin(Time.time * 3f + _orbitAngleDeg) * 0.1f;
 
             transform.position = _owner.transform.position + offset;
+        }
 
-            Vector3 lookDir = offset;
-            lookDir.y = 0;
-            if (lookDir.sqrMagnitude > 0.001f)
+        private Quaternion GetFacingRotation(Vector3 direction)
+        {
+            return Quaternion.LookRotation(direction, Vector3.up)
+                * Quaternion.Euler(_fixedXRotationDeg, _fixedYRotationDeg, 0f);
+        }
+
+        private static Vector3 GetScreenUpDirection()
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null)
             {
-                transform.rotation = Quaternion.LookRotation(lookDir, Vector3.up);
+                return Vector3.forward;
             }
+
+            Vector3 screenUpDirection = Vector3.ProjectOnPlane(mainCamera.transform.up, Vector3.up);
+            return screenUpDirection.sqrMagnitude > 0.001f
+                ? screenUpDirection.normalized
+                : Vector3.forward;
         }
 
         private void CheckAndAttackNearestEnemy()
@@ -114,7 +129,7 @@ namespace ProjectOverdrive.Controllers
             targetDir.y = 0;
             targetDir.Normalize();
 
-            transform.rotation = Quaternion.LookRotation(targetDir, Vector3.up);
+            transform.rotation = GetFacingRotation(targetDir);
 
             Vector3 thrustTarget = startPos + targetDir * (EffectiveDistance * 0.8f);
             float elapsed = 0f;
