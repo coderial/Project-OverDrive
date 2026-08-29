@@ -55,4 +55,22 @@ MonoBehaviour:
   - id: Home-Run
     clip: {fileID: 8300000, guid: 78051253fd1ea2b4887c8da2c866bc0b, type: 3}
     volume: 1
+  - id: Lose
+    clip: {fileID: 8300000, guid: 9081bc4ebeeea344faa1dd00c438def5, type: 3}
+    volume: 1
+  - id: GetCoin
+    clip: {fileID: 8300000, guid: f436a0a0ea68f5e4eb0a9c92c7d7ac1b, type: 3}
+    volume: 1
+  - id: Cancel
+    clip: {fileID: 8300000, guid: ecd7fe6cfbae50f4396d41832270d1f6, type: 3}
+    volume: 1
+  - id: Hurt
+    clip: {fileID: 8300000, guid: c932e25b6de4869478cb618f119fc613, type: 3}
+    volume: 1
+  - id: Hit
+    clip: {fileID: 8300000, guid: a21fd6c41a86f3c41846a3731641e393, type: 3}
+    volume: 1
+  - id: Clear
+    clip: {fileID: 8300000, guid: 9131cbd16270b1241ad790e0a8c81e28, type: 3}
+    volume: 1
   defaultFadeDuration: 0.5
