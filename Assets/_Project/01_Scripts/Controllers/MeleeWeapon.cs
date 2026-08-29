@@ -15,6 +15,7 @@ namespace ProjectOverdrive.Controllers
         private PlayerController _owner;
         private int _weaponLevel = 1;
         private float _orbitAngleDeg;
+        private Quaternion _facingRotationOffset;
         private float _cooldownTimer = 0f;
         private bool _isAttacking = false;
 
@@ -37,6 +38,9 @@ namespace ProjectOverdrive.Controllers
             _orbitAngleDeg = angleDeg;
             _enemyLayer = enemyLayer;
             _orbitRadius = orbitRadius;
+            _facingRotationOffset = transform.rotation;
+            _lastAttackDir = GetScreenUpDirection();
+            transform.rotation = GetFacingRotation(_lastAttackDir);
 
             SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
             if (sr != null && _weaponData != null)
@@ -72,8 +76,27 @@ namespace ProjectOverdrive.Controllers
             // 공전 중에도 마지막으로 공격했던 방향을 계속 바라보게 유지
             if (_lastAttackDir.sqrMagnitude > 0.001f)
             {
-                transform.rotation = Quaternion.LookRotation(_lastAttackDir, Vector3.up);
+                transform.rotation = GetFacingRotation(_lastAttackDir);
             }
+        }
+
+        private Quaternion GetFacingRotation(Vector3 direction)
+        {
+            return Quaternion.LookRotation(direction, Vector3.up) * _facingRotationOffset;
+        }
+
+        private static Vector3 GetScreenUpDirection()
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null)
+            {
+                return Vector3.forward;
+            }
+
+            Vector3 screenUpDirection = Vector3.ProjectOnPlane(mainCamera.transform.up, Vector3.up);
+            return screenUpDirection.sqrMagnitude > 0.001f
+                ? screenUpDirection.normalized
+                : Vector3.forward;
         }
 
         private void CheckAndAttackNearestEnemy()
@@ -117,7 +140,7 @@ namespace ProjectOverdrive.Controllers
 
             // 이번 공격에서 찌를 타겟의 방향을 갱신하고 저장
             _lastAttackDir = targetDir;
-            transform.rotation = Quaternion.LookRotation(_lastAttackDir, Vector3.up);
+            transform.rotation = GetFacingRotation(_lastAttackDir);
 
             Vector3 thrustTarget = startPos + targetDir * (EffectiveDistance * 0.8f);
             float elapsed = 0f;
@@ -153,6 +176,7 @@ namespace ProjectOverdrive.Controllers
                 yield return null;
             }
 
+            transform.rotation = GetFacingRotation(_lastAttackDir);
             _isAttacking = false;
         }
 

@@ -7,6 +7,7 @@ using ProjectOverdrive.Data;
 namespace ProjectOverdrive.Controllers
 {
     [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(PlayerAnimator))]
     public class PlayerController : MonoBehaviour, IDamageable
     {
         private const int MAX_WEAPON_SLOTS = 6;
@@ -22,9 +23,8 @@ namespace ProjectOverdrive.Controllers
         [Tooltip("무기 공전 반경")]
         [SerializeField] private float _weaponOrbitRadius = 1.3f;
 
-        [Header("Visual Components")]
-        [SerializeField] private Transform _modelTransform;
-        [SerializeField] private SpriteRenderer _spriteRenderer;
+        [Header("Animation")]
+        [SerializeField] private PlayerAnimator _playerAnimator;
 
         [Header("Runtime Status")]
         [SerializeField] private int _lv = 1;
@@ -41,7 +41,7 @@ namespace ProjectOverdrive.Controllers
 
         [Header("Weapon Slots (Max 6)")]
         [SerializeField] private WeaponData[] _weaponInfo = new WeaponData[MAX_WEAPON_SLOTS];
-        private int[] _weaponLevels = new int[MAX_WEAPON_SLOTS];
+        private int[] _weaponLevels = new int[MAX_WEAPON_SLOTS]; // 무기 레벨 추적용 배열
 
         private readonly List<MeleeWeapon> _spawnedWeapons = new List<MeleeWeapon>();
 
@@ -64,7 +64,6 @@ namespace ProjectOverdrive.Controllers
 
         public WeaponData[] WeaponInfo => _weaponInfo;
         public int[] WeaponLevels => _weaponLevels;
-        public Vector2 MoveInput => _moveInput; // 새 애니메이터 스크립트가 가져다 쓸 수 있도록 열어둠
 
         public event Action<int, int> OnHpChanged;
         public event Action<float, float> OnExpChanged;
@@ -75,8 +74,8 @@ namespace ProjectOverdrive.Controllers
         {
             _rb = GetComponent<Rigidbody>();
             CurrencyPickup.SharedCollector = this;
-            if (_spriteRenderer == null) _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-            if (_modelTransform == null) _modelTransform = transform;
+            if (_playerAnimator == null) _playerAnimator = GetComponent<PlayerAnimator>();
+            if (_playerAnimator == null) _playerAnimator = gameObject.AddComponent<PlayerAnimator>();
 
             InitializeStats();
         }
@@ -113,7 +112,7 @@ namespace ProjectOverdrive.Controllers
                     if (_playerData.InitialWeapons != null && i < _playerData.InitialWeapons.Length)
                     {
                         _weaponInfo[i] = _playerData.InitialWeapons[i];
-                        if (_weaponInfo[i] != null) _weaponLevels[i] = 1;
+                        if (_weaponInfo[i] != null) _weaponLevels[i] = 1; // 초기 무기 1레벨 셋팅
                     }
                 }
             }
@@ -153,11 +152,13 @@ namespace ProjectOverdrive.Controllers
 
                 if (prefab == null) continue;
 
-                GameObject weaponObj = Instantiate(prefab, transform.position, Quaternion.identity);
+                GameObject weaponObj = Instantiate(prefab, transform.position, prefab.transform.rotation);
                 if (!weaponObj.TryGetComponent<MeleeWeapon>(out var meleeComp))
                     meleeComp = weaponObj.AddComponent<MeleeWeapon>();
 
                 float angle = i * angleStep;
+
+                // 레벨 파라미터 전달 추가
                 meleeComp.Initialize(data, this, level, angle, _enemyLayer, _weaponOrbitRadius);
                 _spawnedWeapons.Add(meleeComp);
             }
@@ -167,11 +168,7 @@ namespace ProjectOverdrive.Controllers
         {
             _moveInput = value.Get<Vector2>();
             _moveDirection = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
-
-            // 좌우 반전은 이제 새 애니메이터 스크립트에서 담당할 것이므로 여기서는 제거해도 되지만, 
-            // 일단 임시로 놔둡니다 (팀원이 작업 완료할 때까지).
-            if (_spriteRenderer != null && Mathf.Abs(_moveInput.x) > 0.01f)
-                _spriteRenderer.flipX = _moveInput.x < 0f;
+            _playerAnimator.UpdateMovement(_moveInput);
         }
 
         private void Move()
@@ -180,6 +177,9 @@ namespace ProjectOverdrive.Controllers
             targetVelocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = targetVelocity;
         }
+
+
+        #region Combat & Progression
 
         public void TakeDamage(int damage)
         {
@@ -247,6 +247,7 @@ namespace ProjectOverdrive.Controllers
 
         private float CalculateMaxExp(int level) => 10.0f + (level * 5.0f) * Mathf.Pow(1.1f, level - 1);
 
+        // 신규 무기 장착 (레벨 1로 셋팅)
         public bool EquipWeapon(int slotIndex, WeaponData weapon)
         {
             if (slotIndex < 0 || slotIndex >= MAX_WEAPON_SLOTS) return false;
@@ -256,6 +257,7 @@ namespace ProjectOverdrive.Controllers
             return true;
         }
 
+        // 기존 무기 레벨업
         public bool UpgradeWeapon(int slotIndex)
         {
             if (slotIndex < 0 || slotIndex >= MAX_WEAPON_SLOTS) return false;
@@ -279,5 +281,7 @@ namespace ProjectOverdrive.Controllers
         {
             if (CurrencyPickup.SharedCollector == this) CurrencyPickup.SharedCollector = null;
         }
+
+        #endregion
     }
 }
