@@ -30,9 +30,6 @@ namespace ProjectOverdrive.UI
             }
         }
 
-        /// <summary>
-        /// 슬롯 데이터 세팅
-        /// </summary>
         public void Setup(WeaponData weapon, int price, Action<UI_ShopItemSlot, WeaponData, int> onBuyCallback)
         {
             _currentWeapon = weapon;
@@ -53,9 +50,11 @@ namespace ProjectOverdrive.UI
                 }
                 if (_statsText != null)
                 {
+                    // 새로 분리된 사거리(Distance)와 범위(Area)를 둘 다 표시합니다.
                     _statsText.text = $"공격력: {_currentWeapon.BaseDamage:F0}\n" +
                                       $"공격주기: {_currentWeapon.BaseAttackSpeed:F1}s\n" +
-                                      $"사거리: {_currentWeapon.BaseAttackRange:F1}";
+                                      $"사거리: {_currentWeapon.BaseAttackDistance:F1}\n" +
+                                      $"범위: {_currentWeapon.BaseHitArea:F1}";
                 }
                 if (_priceText != null) _priceText.text = $"{_price} G";
             }
@@ -67,9 +66,6 @@ namespace ProjectOverdrive.UI
             _onBuyCallback?.Invoke(this, _currentWeapon, _price);
         }
 
-        /// <summary>
-        /// 구매 완료 상태로 변경
-        /// </summary>
         public void SetSoldOut()
         {
             IsSoldOut = true;

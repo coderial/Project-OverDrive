@@ -43,7 +43,6 @@ namespace ProjectOverdrive.Controllers
         [SerializeField] private Animator _animator;
         //[SerializeField] private float _rotationSpeed = 15.0f;
 
-        // 런타임 스탯
         [Header("Runtime Status")]
         [SerializeField] private int _lv = 1;
         [SerializeField] private float _exp = 0.0f;
@@ -59,6 +58,7 @@ namespace ProjectOverdrive.Controllers
 
         [Header("Weapon Slots (Max 6)")]
         [SerializeField] private WeaponData[] _weaponInfo = new WeaponData[MAX_WEAPON_SLOTS];
+        private int[] _weaponLevels = new int[MAX_WEAPON_SLOTS]; // 무기 레벨 추적용 배열
 
         private readonly List<MeleeWeapon> _spawnedWeapons = new List<MeleeWeapon>();
 
@@ -68,7 +68,6 @@ namespace ProjectOverdrive.Controllers
         private FacingDirection _facingDirection = FacingDirection.Front;
         private bool _isDead;
 
-        // 외부 프로퍼티
         public int Lv => _lv;
         public float Exp => _exp;
         public float MaxExp => _maxExp;
@@ -80,7 +79,9 @@ namespace ProjectOverdrive.Controllers
         public float AdditionalRange => _additionalRange;
         public float MagnetRange => _magnetRange;
         public int Currency => _currency;
+
         public WeaponData[] WeaponInfo => _weaponInfo;
+        public int[] WeaponLevels => _weaponLevels;
 
         public event Action<int, int> OnHpChanged;
         public event Action<float, float> OnExpChanged;
@@ -114,12 +115,8 @@ namespace ProjectOverdrive.Controllers
             if (_playerData == null)
             {
                 Debug.LogWarning("[PlayerController] PlayerData가 할당되지 않았습니다. 기본값을 사용합니다.");
-                _maxHp = 100;
-                _moveSpeed = 6.0f;
-                _attackSpeed = 1.0f;
-                _dmgMulti = 1.0f;
-                _additionalRange = 0.0f;
-                _magnetRange = 3.0f;
+                _maxHp = 100; _moveSpeed = 6.0f; _attackSpeed = 1.0f;
+                _dmgMulti = 1.0f; _additionalRange = 0.0f; _magnetRange = 3.0f;
             }
             else
             {
@@ -135,33 +132,31 @@ namespace ProjectOverdrive.Controllers
                     if (_playerData.InitialWeapons != null && i < _playerData.InitialWeapons.Length)
                     {
                         _weaponInfo[i] = _playerData.InitialWeapons[i];
+                        if (_weaponInfo[i] != null) _weaponLevels[i] = 1; // 초기 무기 1레벨 셋팅
                     }
                 }
             }
 
-            _currentHp = _maxHp;
-            _isDead = false;
-            _currency = 0;
-            _lv = 1;
-            _exp = 0.0f;
+            _currentHp = _maxHp; _isDead = false; _currency = 0; _lv = 1; _exp = 0.0f;
             _maxExp = CalculateMaxExp(_lv);
-
-            // UI가 플레이어보다 먼저 활성화된 경우에도 초기 체력을 즉시 동기화한다.
             OnHpChanged?.Invoke(_currentHp, _maxHp);
         }
 
         public void SpawnEquippedWeapons()
         {
-            foreach (var w in _spawnedWeapons)
-            {
-                if (w != null) Destroy(w.gameObject);
-            }
+            foreach (var w in _spawnedWeapons) if (w != null) Destroy(w.gameObject);
             _spawnedWeapons.Clear();
 
             List<WeaponData> validWeapons = new List<WeaponData>();
+            List<int> validLevels = new List<int>();
+
             for (int i = 0; i < MAX_WEAPON_SLOTS; i++)
             {
-                if (_weaponInfo[i] != null) validWeapons.Add(_weaponInfo[i]);
+                if (_weaponInfo[i] != null)
+                {
+                    validWeapons.Add(_weaponInfo[i]);
+                    validLevels.Add(_weaponLevels[i]);
+                }
             }
 
             int count = validWeapons.Count;
@@ -172,35 +167,30 @@ namespace ProjectOverdrive.Controllers
             for (int i = 0; i < count; i++)
             {
                 WeaponData data = validWeapons[i];
+                int level = validLevels[i];
                 GameObject prefab = data.WeaponPrefab != null ? data.WeaponPrefab : _defaultWeaponPrefab;
 
-                if (prefab == null)
-                {
-                    Debug.LogWarning($"[PlayerController] '{data.WeaponName}'에 연결된 프리팹이 없습니다.");
-                    continue;
-                }
+                if (prefab == null) continue;
 
                 GameObject weaponObj = Instantiate(prefab, transform.position, prefab.transform.rotation);
                 if (!weaponObj.TryGetComponent<MeleeWeapon>(out var meleeComp))
-                {
                     meleeComp = weaponObj.AddComponent<MeleeWeapon>();
-                }
 
                 float angle = i * angleStep;
-                // _weaponOrbitRadius를 정상 전달
-                meleeComp.Initialize(data, this, angle, _enemyLayer, _weaponOrbitRadius);
+
+                // 레벨 파라미터 전달 추가
+                meleeComp.Initialize(data, this, level, angle, _enemyLayer, _weaponOrbitRadius);
                 _spawnedWeapons.Add(meleeComp);
             }
         }
-
-        #region Input & Movement
 
         public void OnMove(InputValue value)
         {
             _moveInput = value.Get<Vector2>();
             _moveDirection = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
 
-            UpdateMovementAnimation(_moveInput);
+            if (_spriteRenderer != null && Mathf.Abs(_moveInput.x) > 0.01f)
+                _spriteRenderer.flipX = _moveInput.x < 0f;
         }
 
         private void UpdateMovementAnimation(Vector2 moveInput)
@@ -270,14 +260,11 @@ namespace ProjectOverdrive.Controllers
         public void TakeDamage(int damage)
         {
             if (_isDead || damage <= 0) return;
-
             int appliedDamage = Mathf.Min(_currentHp, damage);
             _currentHp = Mathf.Max(0, _currentHp - damage);
 
             if (DamageTextManager.Instance != null)
-            {
                 DamageTextManager.Instance.ShowPlayerDamage(appliedDamage, transform.position);
-            }
 
             OnHpChanged?.Invoke(_currentHp, _maxHp);
             if (_currentHp <= 0) Die();
@@ -286,7 +273,6 @@ namespace ProjectOverdrive.Controllers
         public void TakeDamage(float damage, Vector3 hitDirection, float knockback)
         {
             if (_isDead || damage <= 0f) return;
-
             TakeDamage(Mathf.Max(1, Mathf.CeilToInt(damage)));
 
             if (!_isDead && knockback > 0f && hitDirection.sqrMagnitude > 0.0001f)
@@ -315,60 +301,61 @@ namespace ProjectOverdrive.Controllers
 
         public void AddCurrency(int amount)
         {
-            if (amount <= 0)
-            {
-                return;
-            }
-
+            if (amount <= 0) return;
             _currency += amount;
             OnCurrencyChanged?.Invoke(_currency);
         }
 
         public bool SpendCurrency(int amount)
         {
-            if (amount <= 0 || _currency < amount)
-            {
-                return false;
-            }
+            if (amount <= 0 || _currency < amount) return false;
             _currency -= amount;
             OnCurrencyChanged?.Invoke(_currency);
             return true;
         }
+
         private void LevelUp()
         {
             _lv++;
             _maxExp = CalculateMaxExp(_lv);
             OnLevelUp?.Invoke(_lv);
-            Debug.Log($"[PlayerController] Level Up! 레벨: {_lv}");
         }
 
         private float CalculateMaxExp(int level) => 10.0f + (level * 5.0f) * Mathf.Pow(1.1f, level - 1);
 
+        // 신규 무기 장착 (레벨 1로 셋팅)
         public bool EquipWeapon(int slotIndex, WeaponData weapon)
         {
             if (slotIndex < 0 || slotIndex >= MAX_WEAPON_SLOTS) return false;
             _weaponInfo[slotIndex] = weapon;
+            _weaponLevels[slotIndex] = 1;
             SpawnEquippedWeapons();
             return true;
+        }
+
+        // 기존 무기 레벨업
+        public bool UpgradeWeapon(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= MAX_WEAPON_SLOTS) return false;
+            if (_weaponInfo[slotIndex] != null && _weaponLevels[slotIndex] < 3)
+            {
+                _weaponLevels[slotIndex]++;
+                SpawnEquippedWeapons();
+                return true;
+            }
+            return false;
         }
 
         private void Die()
         {
             if (_isDead) return;
-
             _isDead = true;
-            Debug.Log("[PlayerController] 사망!");
             _rb.linearVelocity = Vector3.zero;
         }
 
         private void OnDestroy()
         {
-            if (CurrencyPickup.SharedCollector == this)
-            {
-                CurrencyPickup.SharedCollector = null;
-            }
+            if (CurrencyPickup.SharedCollector == this) CurrencyPickup.SharedCollector = null;
         }
-
-        #endregion
     }
 }

@@ -13,39 +13,46 @@ namespace ProjectOverdrive.Controllers
 
         private WeaponData _weaponData;
         private PlayerController _owner;
+        private int _weaponLevel = 1;
         private float _orbitAngleDeg;
         private float _fixedXRotationDeg;
         private float _fixedYRotationDeg;
         private float _cooldownTimer = 0f;
         private bool _isAttacking = false;
 
-        public float EffectiveRange => (_weaponData != null && _owner != null)
-            ? _weaponData.BaseAttackRange + _owner.AdditionalRange
+        public float EffectiveDistance => (_weaponData != null && _owner != null)
+            ? _weaponData.BaseAttackDistance + _owner.AdditionalRange
             : 1.5f;
 
-        /// <summary>
-        /// 무기 생성 시 초기화 (공전 반경 포함)
-        /// </summary>
-        public void Initialize(WeaponData data, PlayerController owner, float angleDeg, LayerMask enemyLayer, float orbitRadius)
+        public float EffectiveArea => _weaponData != null ? _weaponData.BaseHitArea : 0.8f;
+
+        private float LevelDmgMultiplier => 1f + (_weaponLevel - 1) * 0.5f;
+
+        public void Initialize(WeaponData data, PlayerController owner, int level, float angleDeg, LayerMask enemyLayer, float orbitRadius)
         {
             _weaponData = data;
             _owner = owner;
+            _weaponLevel = level;
             _orbitAngleDeg = angleDeg;
             _enemyLayer = enemyLayer;
             _orbitRadius = orbitRadius;
-            _fixedXRotationDeg = transform.eulerAngles.x;
-            _fixedYRotationDeg = transform.eulerAngles.y;
-            transform.rotation = GetFacingRotation(GetScreenUpDirection());
+
+            // [추가된 로직] 레벨에 맞는 무기 스프라이트(외형) 씌우기
+            SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
+            if (sr != null && _weaponData != null)
+            {
+                Sprite levelSprite = _weaponData.GetSpriteForLevel(_weaponLevel);
+                if (levelSprite != null)
+                {
+                    sr.sprite = levelSprite;
+                }
+            }
         }
 
         private void Update()
         {
             if (_owner == null || _weaponData == null) return;
-
-            if (_cooldownTimer > 0f)
-            {
-                _cooldownTimer -= Time.deltaTime;
-            }
+            if (_cooldownTimer > 0f) _cooldownTimer -= Time.deltaTime;
 
             if (!_isAttacking)
             {
@@ -87,7 +94,7 @@ namespace ProjectOverdrive.Controllers
         {
             if (_cooldownTimer > 0f) return;
 
-            Collider[] hits = Physics.OverlapSphere(_owner.transform.position, EffectiveRange, _enemyLayer);
+            Collider[] hits = Physics.OverlapSphere(_owner.transform.position, EffectiveDistance, _enemyLayer);
             if (hits.Length == 0) return;
 
             Collider nearestEnemy = null;
@@ -113,7 +120,6 @@ namespace ProjectOverdrive.Controllers
         {
             _isAttacking = true;
 
-            // 프로퍼티 정상 참조 (BaseAttackSpeed)
             float attackSpeedFactor = _owner.AttackSpeed * _weaponData.BaseAttackSpeed;
             float totalCooldown = 1.0f / Mathf.Max(0.1f, attackSpeedFactor);
             _cooldownTimer = totalCooldown;
@@ -125,7 +131,7 @@ namespace ProjectOverdrive.Controllers
 
             transform.rotation = GetFacingRotation(targetDir);
 
-            Vector3 thrustTarget = startPos + targetDir * (EffectiveRange * 0.8f);
+            Vector3 thrustTarget = startPos + targetDir * (EffectiveDistance * 0.8f);
             float elapsed = 0f;
             float thrustDuration = 0.08f;
             bool hitApplied = false;
@@ -152,29 +158,23 @@ namespace ProjectOverdrive.Controllers
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / returnDuration;
-
                 float rad = _orbitAngleDeg * Mathf.Deg2Rad;
                 Vector3 currentOrbitTarget = _owner.transform.position + new Vector3(Mathf.Cos(rad), _orbitHeight, Mathf.Sin(rad)) * _orbitRadius;
-
                 transform.position = Vector3.Lerp(currentThrustPos, currentOrbitTarget, t);
                 yield return null;
             }
-
-            transform.rotation = GetFacingRotation(targetDir);
             _isAttacking = false;
         }
 
         private void ApplyDamage(Vector3 attackDir)
         {
-            float finalDamage = _weaponData.BaseDamage * _owner.DmgMulti;
-            float hitRadius = 0.8f;
+            float finalDamage = _weaponData.BaseDamage * LevelDmgMultiplier * _owner.DmgMulti;
 
-            Collider[] victims = Physics.OverlapSphere(transform.position, hitRadius, _enemyLayer);
+            Collider[] victims = Physics.OverlapSphere(transform.position, EffectiveArea, _enemyLayer);
             foreach (var victim in victims)
             {
                 if (victim.TryGetComponent<IDamageable>(out var damageable))
                 {
-                    // 프로퍼티 정상 참조 (BaseKnockback)
                     damageable.TakeDamage(finalDamage, attackDir, _weaponData.BaseKnockback);
                 }
             }
@@ -182,8 +182,11 @@ namespace ProjectOverdrive.Controllers
 
         private void OnDrawGizmosSelected()
         {
+            if (_owner == null) return;
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, EffectiveRange);
+            Gizmos.DrawWireSphere(_owner.transform.position, EffectiveDistance);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, EffectiveArea);
         }
     }
 }
