@@ -8,6 +8,7 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
     public static Transform SharedTarget { get; set; }
 
     private Transform _cachedTransform;
+    private SpriteRenderer _spriteRenderer;
     private Transform _target;
     private PooledObject _pooledObject;
     private PlayerController _contactPlayer;
@@ -25,6 +26,7 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
     private void Awake()
     {
         _cachedTransform = transform;
+        _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         TryGetComponent(out _pooledObject);
     }
 
@@ -55,7 +57,18 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
 
         float distance = Mathf.Sqrt(squaredDistance);
         float moveDistance = Mathf.Min(_moveSpeed * Time.deltaTime, distance - _stoppingDistance);
+        UpdateSpriteFlip(direction.x);
         _cachedTransform.position = currentPosition + direction * (moveDistance / distance);
+    }
+
+    private void UpdateSpriteFlip(float horizontalDirection)
+    {
+        if (_spriteRenderer == null || Mathf.Abs(horizontalDirection) <= 0.001f)
+        {
+            return;
+        }
+
+        _spriteRenderer.flipX = horizontalDirection < 0f;
     }
 
     public void Configure(MonsterData data, Transform target)
@@ -67,6 +80,11 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
         _stoppingDistanceSquared = _stoppingDistance * _stoppingDistance;
         CurrentHealth = data.MaxHealth;
         _nextContactDamageTime = 0f;
+
+        if (_target != null)
+        {
+            UpdateSpriteFlip(_target.position.x - _cachedTransform.position.x);
+        }
     }
 
     public void TakeDamage(float damage, Vector3 hitDirection, float knockback)

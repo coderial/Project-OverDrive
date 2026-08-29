@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Dagger
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
   _weaponName: Dagger
-  _icon: {fileID: 0}
-  _weaponPrefab: {fileID: 1248316296389551195, guid: 5b311c36e1f5a144eb49c5f7c6a7d5eb, type: 3}
+  _icon: {fileID: -1402138342, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
+  _weaponPrefab: {fileID: 1950940290965382430, guid: 0e920392e8120f04aa691fb0d2a68ff0, type: 3}
   _baseDamage: 10
   _baseAttackSpeed: 1
   _baseAttackRange: 1.5
