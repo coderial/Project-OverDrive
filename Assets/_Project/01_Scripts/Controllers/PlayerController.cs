@@ -259,6 +259,16 @@ namespace ProjectOverdrive.Controllers
             OnCurrencyChanged?.Invoke(_currency);
         }
 
+        public bool SpendCurrency(int amount)
+        {
+            if (amount <= 0 || _currency < amount)
+            {
+                return false;
+            }
+            _currency -= amount;
+            OnCurrencyChanged?.Invoke(_currency);
+            return true;
+        }
         private void LevelUp()
         {
             _lv++;
