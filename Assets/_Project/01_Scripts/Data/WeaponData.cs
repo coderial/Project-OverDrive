@@ -25,6 +25,10 @@ namespace ProjectOverdrive.Data
         [Tooltip("Lv.3 무기 외형")]
         [SerializeField] private Sprite _level3Sprite;
 
+                [Header("VFX")]
+        [Tooltip("공격(휘두르기/찌르기) 시 생성될 이펙트 프리팹")]
+        [SerializeField] private GameObject _attackEffectPrefab;
+
         [Header("Economy (상점)")]
         [SerializeField] private int _purchasePrice = 50;
         [SerializeField] private int _sellPrice = 25;
@@ -33,13 +37,7 @@ namespace ProjectOverdrive.Data
         [Tooltip("공격 방식 (찌르기/ 휘두르기) - 믹스 활성화 시 기본이 되는 모션")]
         [SerializeField] private WeaponAttackType _attackType = WeaponAttackType.Thrust;
 
-        [Header("Attack Mixing")]
-        [Tooltip("찌르기와 베기를 섞어서 쓸지 여부")]
-        [SerializeField] private bool _mixAttackTypes = false;
-
-        [Tooltip("찌르기 발동 확률 (0 = 무조건 베기, 1 = 무조건 찌르기, 0.5 = 반반)")]
-        [Range(0f, 1f)]
-        [SerializeField] private float _thrustProbability = 0.5f;
+        
 
         [Header("Combat Numbers")]
         [SerializeField] private float _baseDamage = 10.0f;
@@ -54,14 +52,14 @@ namespace ProjectOverdrive.Data
         // 프로퍼티
         public string WeaponName => _weaponName;
         public Sprite Icon => _icon;
-        public GameObject WeaponPrefab => _weaponPrefab;
+                public GameObject WeaponPrefab => _weaponPrefab;
+        public GameObject AttackEffectPrefab => _attackEffectPrefab;
 
         public int PurchasePrice => _purchasePrice;
         public int SellPrice => _sellPrice;
 
         public WeaponAttackType AttackType => _attackType;
-        public bool MixAttackTypes => _mixAttackTypes;
-        public float ThrustProbability => _thrustProbability;
+        
 
         public float BaseDamage => _baseDamage;
         public float BaseAttackSpeed => _baseAttackSpeed;
