@@ -13,6 +13,7 @@ namespace ProjectOverdrive.Controllers
         private const float SIDE_WALK_BLEND = 1.0f;
 
         private static readonly int BlendParameterHash = Animator.StringToHash("Blend");
+        private static readonly int IsDeadParameterHash = Animator.StringToHash("IsDead");
 
         private enum FacingDirection
         {
@@ -25,7 +26,13 @@ namespace ProjectOverdrive.Controllers
         [SerializeField] private SpriteRenderer _spriteRenderer;
         [SerializeField] private Animator _animator;
 
+        [Header("Death Presentation")]
+        [SerializeField, Min(0f)] private float _deathPresentationDuration = 0.5f;
+
         private FacingDirection _facingDirection = FacingDirection.Front;
+        private bool _isDead;
+
+        public float DeathPresentationDuration => _deathPresentationDuration;
 
         private void Awake()
         {
@@ -37,6 +44,8 @@ namespace ProjectOverdrive.Controllers
 
         public void UpdateMovement(Vector2 moveInput)
         {
+            if (_isDead) return;
+
             bool isWalking = moveInput.sqrMagnitude > 0.001f;
 
             if (isWalking)
@@ -47,6 +56,26 @@ namespace ProjectOverdrive.Controllers
             if (_animator != null)
             {
                 _animator.SetFloat(BlendParameterHash, GetMovementBlend(_facingDirection, isWalking));
+            }
+        }
+
+        public void PlayDeath()
+        {
+            if (_isDead) return;
+
+            _isDead = true;
+            if (_animator != null)
+            {
+                _animator.SetBool(IsDeadParameterHash, true);
+            }
+        }
+
+        public void ResetDeath()
+        {
+            _isDead = false;
+            if (_animator != null)
+            {
+                _animator.SetBool(IsDeadParameterHash, false);
             }
         }
 

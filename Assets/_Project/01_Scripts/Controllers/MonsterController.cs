@@ -20,7 +20,7 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
     private SpriteRenderer _spriteRenderer;
     private Transform _target;
     private PooledObject _pooledObject;
-    private PlayerController _contactPlayer;
+    private PlayerHealth _contactPlayer;
     private MonsterData _data;
     private float _moveSpeed;
     private float _stoppingDistance;
@@ -312,7 +312,7 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
     private void OnTriggerEnter(Collider other)
     {
         if (_isDead) return;
-        if (other.TryGetComponent(out PlayerController player))
+        if (other.TryGetComponent(out PlayerHealth player))
         {
             _contactPlayer = player;
             ApplyContactDamage();

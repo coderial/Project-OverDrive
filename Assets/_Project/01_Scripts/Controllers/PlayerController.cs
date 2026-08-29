@@ -8,7 +8,8 @@ namespace ProjectOverdrive.Controllers
 {
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(PlayerAnimator))]
-    public class PlayerController : MonoBehaviour, IDamageable
+    [RequireComponent(typeof(PlayerHealth))]
+    public class PlayerController : MonoBehaviour
     {
         private const int MAX_WEAPON_SLOTS = 6;
 
@@ -23,15 +24,14 @@ namespace ProjectOverdrive.Controllers
         [Tooltip("무기 공전 반경")]
         [SerializeField] private float _weaponOrbitRadius = 1.3f;
 
-        [Header("Animation")]
+        [Header("Components")]
         [SerializeField] private PlayerAnimator _playerAnimator;
+        [SerializeField] private PlayerHealth _playerHealth;
 
         [Header("Runtime Status")]
         [SerializeField] private int _lv = 1;
         [SerializeField] private float _exp = 0.0f;
         [SerializeField] private float _maxExp = 10.0f;
-        [SerializeField] private int _currentHp;
-        [SerializeField] private int _maxHp;
         [SerializeField] private float _moveSpeed;
         [SerializeField] private float _attackSpeed;
         [SerializeField] private float _dmgMulti;
@@ -48,14 +48,11 @@ namespace ProjectOverdrive.Controllers
         private Rigidbody _rb;
         private Vector2 _moveInput;
         private Vector3 _moveDirection;
-        private bool _isDead;
         private bool _isMovementEnabled = true;
 
         public int Lv => _lv;
         public float Exp => _exp;
         public float MaxExp => _maxExp;
-        public int CurrentHp => _currentHp;
-        public int MaxHp => _maxHp;
         public float MoveSpeed => _moveSpeed;
         public float AttackSpeed => _attackSpeed;
         public float DmgMulti => _dmgMulti;
@@ -67,7 +64,6 @@ namespace ProjectOverdrive.Controllers
         public WeaponData[] WeaponInfo => _weaponInfo;
         public int[] WeaponLevels => _weaponLevels;
 
-        public event Action<int, int> OnHpChanged;
         public event Action<float, float> OnExpChanged;
         public event Action<int> OnLevelUp;
         public event Action<int> OnCurrencyChanged;
@@ -78,6 +74,10 @@ namespace ProjectOverdrive.Controllers
             CurrencyPickup.SharedCollector = this;
             if (_playerAnimator == null) _playerAnimator = GetComponent<PlayerAnimator>();
             if (_playerAnimator == null) _playerAnimator = gameObject.AddComponent<PlayerAnimator>();
+            if (_playerHealth == null) _playerHealth = GetComponent<PlayerHealth>();
+            if (_playerHealth == null) _playerHealth = gameObject.AddComponent<PlayerHealth>();
+
+            _playerHealth.OnDied += HandlePlayerDied;
 
             InitializeStats();
         }
@@ -94,15 +94,16 @@ namespace ProjectOverdrive.Controllers
 
         public void InitializeStats()
         {
+            int maxHp;
             if (_playerData == null)
             {
                 Debug.LogWarning("[PlayerController] PlayerData가 할당되지 않았습니다. 기본값을 사용합니다.");
-                _maxHp = 100; _moveSpeed = 6.0f; _attackSpeed = 1.0f;
+                maxHp = 100; _moveSpeed = 6.0f; _attackSpeed = 1.0f;
                 _dmgMulti = 1.0f; _additionalRange = 0.0f; _magnetRange = 3.0f;
             }
             else
             {
-                _maxHp = _playerData.BaseMaxHp;
+                maxHp = _playerData.BaseMaxHp;
                 _moveSpeed = _playerData.BaseMoveSpeed;
                 _attackSpeed = _playerData.BaseAttackSpeed;
                 _dmgMulti = _playerData.BaseDmgMulti;
@@ -119,9 +120,11 @@ namespace ProjectOverdrive.Controllers
                 }
             }
 
-            _currentHp = _maxHp; _isDead = false; _currency = 0; _lv = 1; _exp = 0.0f;
+            _playerHealth.Initialize(maxHp);
+            _playerAnimator.ResetDeath();
+            _currency = 0; _lv = 1; _exp = 0.0f;
             _maxExp = CalculateMaxExp(_lv);
-            OnHpChanged?.Invoke(_currentHp, _maxHp);
+            SetMovementEnabled(true);
         }
 
         public void SpawnEquippedWeapons()
@@ -213,38 +216,7 @@ namespace ProjectOverdrive.Controllers
         }
 
 
-        #region Combat & Progression
-
-        public void TakeDamage(int damage)
-        {
-            if (_isDead || damage <= 0) return;
-            int appliedDamage = Mathf.Min(_currentHp, damage);
-            _currentHp = Mathf.Max(0, _currentHp - damage);
-
-            if (DamageTextManager.Instance != null)
-                DamageTextManager.Instance.ShowPlayerDamage(appliedDamage, transform.position);
-
-            OnHpChanged?.Invoke(_currentHp, _maxHp);
-            if (_currentHp <= 0) Die();
-        }
-
-        public void TakeDamage(float damage, Vector3 hitDirection, float knockback)
-        {
-            if (_isDead || damage <= 0f) return;
-            TakeDamage(Mathf.Max(1, Mathf.CeilToInt(damage)));
-
-            if (!_isDead && knockback > 0f && hitDirection.sqrMagnitude > 0.0001f)
-            {
-                hitDirection.y = 0f;
-                _rb.AddForce(hitDirection.normalized * knockback, ForceMode.Impulse);
-            }
-        }
-
-        public void Heal(int amount)
-        {
-            _currentHp = Mathf.Min(_maxHp, _currentHp + amount);
-            OnHpChanged?.Invoke(_currentHp, _maxHp);
-        }
+        #region Progression & Weapons
 
         public void AddExp(float amount)
         {
@@ -314,15 +286,15 @@ namespace ProjectOverdrive.Controllers
             SpawnEquippedWeapons(); // 무기 재배치
         }
 
-        private void Die()
+        private void HandlePlayerDied()
         {
-            if (_isDead) return;
-            _isDead = true;
-            _rb.linearVelocity = Vector3.zero;
+            SetMovementEnabled(false);
+            _playerAnimator.PlayDeath();
         }
 
         private void OnDestroy()
         {
+            if (_playerHealth != null) _playerHealth.OnDied -= HandlePlayerDied;
             if (CurrencyPickup.SharedCollector == this) CurrencyPickup.SharedCollector = null;
         }
 

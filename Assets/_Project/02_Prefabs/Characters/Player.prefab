@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 4225589472523620401}
   - component: {fileID: 2646020084745679909}
   - component: {fileID: 1535948940923238469}
+  - component: {fileID: 7864512345678901234}
   m_Layer: 7
   m_Name: Player
   m_TagString: Untagged
@@ -134,7 +135,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cb4cb0f0b3896684580c0d895787d85e, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Controllers.PlayerController
   _playerData: {fileID: 11400000, guid: 594836cf7e89dee49b08514e7b80522a, type: 2}
   _defaultWeaponPrefab: {fileID: 0}
@@ -143,11 +144,10 @@ MonoBehaviour:
     m_Bits: 64
   _weaponOrbitRadius: 1.2
   _playerAnimator: {fileID: 0}
+  _playerHealth: {fileID: 7864512345678901234}
   _lv: 1
   _exp: 0
   _maxExp: 10
-  _currentHp: 0
-  _maxHp: 0
   _moveSpeed: 0
   _attackSpeed: 0
   _dmgMulti: 0
@@ -248,3 +248,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Controllers.PlayerAnimator
   _spriteRenderer: {fileID: 4267872283760332181}
   _animator: {fileID: 2646020084745679909}
+  _deathPresentationDuration: 0.5
+--- !u!114 &7864512345678901234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1200241804745829709}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f49e08ef4d14e549ad55c0c28df5f4a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Controllers.PlayerHealth
+  _invincibilityDuration: 0.5
+  _blinkInterval: 0.1
+  _spriteRenderers:
+  - {fileID: 4267872283760332181}
