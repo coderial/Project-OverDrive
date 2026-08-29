@@ -18,8 +18,9 @@ MonoBehaviour:
   _level1Sprite: {fileID: 1029271361, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 543730695, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level3Sprite: {fileID: -548996493, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
-  _purchasePrice: 20
-  _sellPrice: 10
+  _attackEffectPrefab: {fileID: 0}
+  _purchasePrice: 50
+  _sellPrice: 25
   _attackType: 1
   _mixAttackTypes: 0
   _thrustProbability: 0.5

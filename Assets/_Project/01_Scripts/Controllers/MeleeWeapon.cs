@@ -50,29 +50,33 @@ namespace ProjectOverdrive.Controllers
             }
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             if (_owner == null || _weaponData == null) return;
             if (_cooldownTimer > 0f) _cooldownTimer -= Time.deltaTime;
 
             if (!_isAttacking)
             {
-                UpdateOrbitPosition();
+                _orbitAngleDeg += 120f * Time.deltaTime;
+                float rad = _orbitAngleDeg * Mathf.Deg2Rad;
+                Vector3 offset = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * _orbitRadius;
+                offset.y = _orbitHeight + Mathf.Sin(Time.time * 3f + _orbitAngleDeg) * 0.1f;
+
+                transform.position = _owner.transform.position + offset;
+
+                if (_spriteRenderer != null && _lastAttackDir.sqrMagnitude > 0.001f)
+                {
+                    float angle = Mathf.Atan2(_lastAttackDir.z, _lastAttackDir.x) * Mathf.Rad2Deg;
+                    _spriteRenderer.transform.localRotation = Quaternion.Euler(90f, 0f, angle - 45f);
+                }
+
                 CheckAndAttackNearestEnemy();
             }
-        }
-
-        private void UpdateOrbitPosition()
-        {
-            float rad = _orbitAngleDeg * Mathf.Deg2Rad;
-            Vector3 offset = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * _orbitRadius;
-            offset.y = _orbitHeight + Mathf.Sin(Time.time * 3f + _orbitAngleDeg) * 0.1f;
-
-            transform.position = _owner.transform.position + offset;
-
-            if (_spriteRenderer != null && _lastAttackDir.sqrMagnitude > 0.001f)
+            else
             {
-                _spriteRenderer.flipX = _lastAttackDir.x < 0f;
+                Vector3 offset = _lastAttackDir * _orbitRadius;
+                offset.y = _orbitHeight;
+                transform.position = _owner.transform.position + offset;
             }
         }
 
@@ -102,7 +106,7 @@ namespace ProjectOverdrive.Controllers
             }
         }
 
-                private IEnumerator AttackRoutine(Transform target)
+        private IEnumerator AttackRoutine(Transform target)
         {
             _isAttacking = true;
 
@@ -110,7 +114,6 @@ namespace ProjectOverdrive.Controllers
             float totalCooldown = 1.0f / Mathf.Max(0.1f, attackSpeedFactor);
             _cooldownTimer = totalCooldown;
 
-            // 🎯 기준 방향을 '플레이어 -> 적'으로 깔끔하게 통일합니다.
             Vector3 targetDir = (target.position - _owner.transform.position);
             targetDir.y = 0;
             targetDir.Normalize();
@@ -121,164 +124,176 @@ namespace ProjectOverdrive.Controllers
                 _spriteRenderer.flipX = _lastAttackDir.x < 0f;
             }
 
-            // 공격이 시작되는 깔끔한 고정 위치 (플레이어와 적 사이의 궤도 반경 위치)
-            Vector3 attackStartPos = _owner.transform.position + targetDir * _orbitRadius;
-
             bool useThrust = _weaponData.AttackType == WeaponAttackType.Thrust;
-            if (_weaponData.MixAttackTypes)
-            {
-                useThrust = UnityEngine.Random.value <= _weaponData.ThrustProbability;
-            }
-
             if (useThrust)
             {
-                yield return StartCoroutine(ThrustRoutine(attackStartPos, targetDir));
+                yield return StartCoroutine(ThrustRoutine(targetDir));
             }
             else
             {
-                yield return StartCoroutine(SwingRoutine(attackStartPos, targetDir));
+                yield return StartCoroutine(SwingRoutine(targetDir));
             }
 
             _isAttacking = false;
         }
 
-                                private IEnumerator ThrustRoutine(Vector3 startPos, Vector3 targetDir)
+        private IEnumerator ThrustRoutine(Vector3 targetDir)
         {
-            Vector3 thrustTarget = _owner.transform.position + targetDir * EffectiveDistance;
-            
             float targetAngle = Mathf.Atan2(targetDir.z, targetDir.x) * Mathf.Rad2Deg - 45f;
             Quaternion thrustRot = Quaternion.Euler(90f, 0f, targetAngle);
 
             if (_spriteRenderer != null) _spriteRenderer.transform.localRotation = thrustRot;
 
-            float aimDuration = 0.1f;
-            Vector3 aimPos = startPos - targetDir * 0.3f;
-            float elapsed = 0f;
+            Vector3 localStart = Vector3.zero;
+            Vector3 localAim = -targetDir * 0.4f; 
+            Vector3 localThrust = targetDir * 1.5f; 
 
-            while (elapsed < aimDuration)
-            {
-                elapsed += Time.deltaTime;
-                transform.position = Vector3.Lerp(startPos, aimPos, elapsed / aimDuration);
-                yield return null;
-            }
-
-            float thrustDuration = 0.05f;
-            elapsed = 0f;
             HashSet<Collider> hitTargets = new HashSet<Collider>();
 
-            while (elapsed < thrustDuration)
+            if (_spriteRenderer != null)
             {
-                elapsed += Time.deltaTime;
-                transform.position = Vector3.Lerp(aimPos, thrustTarget, elapsed / thrustDuration);
-                
-                // 찌르기: 진행 방향을 기준으로 좁은 각도(60도) 내의 적 타격
-                ApplyConeDamage(targetDir, 60f, hitTargets);
-                
-                yield return null;
-            }
-
-            elapsed = 0f;
-            float returnDuration = 0.15f;
-            Vector3 currentThrustPos = transform.position;
-            Quaternion currentRot = _spriteRenderer != null ? _spriteRenderer.transform.localRotation : _originalSpriteRot;
-
-            while (elapsed < returnDuration)
-            {
-                elapsed += Time.deltaTime;
-                float rad = _orbitAngleDeg * Mathf.Deg2Rad;
-                Vector3 currentOrbitTarget = _owner.transform.position + new Vector3(Mathf.Cos(rad), _orbitHeight, Mathf.Sin(rad)) * _orbitRadius;
-                transform.position = Vector3.Lerp(currentThrustPos, currentOrbitTarget, elapsed / returnDuration);
-                
-                if (_spriteRenderer != null)
+                float elapsed = 0f;
+                float duration = 0.05f;
+                while (elapsed < duration)
                 {
-                    _spriteRenderer.transform.localRotation = Quaternion.Lerp(currentRot, _originalSpriteRot, elapsed / returnDuration);
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / duration;
+                    float easeT = 1f - (1f - t) * (1f - t); 
+                    _spriteRenderer.transform.localPosition = Vector3.Lerp(localStart, localAim, easeT);
+                    yield return null;
                 }
-                yield return null;
+
+                PlayAttackVFX(transform.position + targetDir * 0.5f, targetDir);
+
+                elapsed = 0f;
+                duration = 0.08f;
+                while (elapsed < duration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / duration;
+                    float easeT = 1f - Mathf.Pow(1f - t, 3f); 
+                    _spriteRenderer.transform.localPosition = Vector3.Lerp(localAim, localThrust, easeT);
+                    ApplyConeDamage(targetDir, 60f, hitTargets);
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(0.04f);
+
+                elapsed = 0f;
+                duration = 0.1f;
+                Vector3 currentPos = _spriteRenderer.transform.localPosition;
+                while (elapsed < duration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / duration;
+                    float easeT = t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f; 
+                    _spriteRenderer.transform.localPosition = Vector3.Lerp(currentPos, localStart, easeT);
+                    yield return null;
+                }
             }
 
-            if (_spriteRenderer != null) _spriteRenderer.transform.localRotation = _originalSpriteRot;
+            if (_spriteRenderer != null)
+            {
+                _spriteRenderer.transform.localPosition = Vector3.zero;
+                _spriteRenderer.transform.localRotation = _originalSpriteRot;
+            }
         }
 
-                                private IEnumerator SwingRoutine(Vector3 fixedPos, Vector3 targetDir)
+        private IEnumerator SwingRoutine(Vector3 targetDir)
         {
-            float elapsed = 0f;
-            float swingDuration = 0.18f; 
-            HashSet<Collider> hitTargets = new HashSet<Collider>();
-
             float baseAngle = Mathf.Atan2(targetDir.z, targetDir.x) * Mathf.Rad2Deg;
-            float rotStart = 80f;
-            float rotEnd = -80f;
+            float rotStart = 100f;
+            float rotEnd = -100f;
 
             if (targetDir.x < 0f)
             {
-                rotStart = -80f;
-                rotEnd = 80f;
+                rotStart = -100f;
+                rotEnd = 100f;
             }
 
             Quaternion baseRot = Quaternion.Euler(90f, 0f, baseAngle - 45f);
+            float windUpAngle = rotStart + (rotStart > 0 ? 20f : -20f); 
+            HashSet<Collider> hitTargets = new HashSet<Collider>();
 
-            while (elapsed < swingDuration)
+            if (_spriteRenderer != null)
             {
-                elapsed += Time.deltaTime;
-                float t = elapsed / swingDuration;
-
-                transform.position = fixedPos;
-
-                if (_spriteRenderer != null)
+                float elapsed = 0f;
+                float duration = 0.05f;
+                while (elapsed < duration)
                 {
-                    float currentRot = Mathf.Lerp(rotStart, rotEnd, t);
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / duration;
+                    float easeT = 1f - (1f - t) * (1f - t); 
+                    float currentRot = Mathf.Lerp(rotStart, windUpAngle, easeT);
                     _spriteRenderer.transform.localRotation = baseRot * Quaternion.Euler(0f, 0f, currentRot);
+                    yield return null;
                 }
 
-                // 베기: 궤적 전체를 커버하기 위해 타겟 방향 기준 넓은 부채꼴(160도) 검사
-                ApplyConeDamage(targetDir, 160f, hitTargets);
+                PlayAttackVFX(transform.position, targetDir);
 
-                yield return null;
-            }
-
-            elapsed = 0f;
-            float returnDuration = 0.12f;
-            Vector3 currentPos = transform.position;
-            Quaternion currentRotQ = _spriteRenderer != null ? _spriteRenderer.transform.localRotation : _originalSpriteRot;
-
-            while (elapsed < returnDuration)
-            {
-                elapsed += Time.deltaTime;
-                float rad = _orbitAngleDeg * Mathf.Deg2Rad;
-                Vector3 currentOrbitTarget = _owner.transform.position + new Vector3(Mathf.Cos(rad), _orbitHeight, Mathf.Sin(rad)) * _orbitRadius;
-                transform.position = Vector3.Lerp(currentPos, currentOrbitTarget, elapsed / returnDuration);
-
-                if (_spriteRenderer != null)
+                elapsed = 0f;
+                duration = 0.12f;
+                while (elapsed < duration)
                 {
-                    _spriteRenderer.transform.localRotation = Quaternion.Lerp(currentRotQ, _originalSpriteRot, elapsed / returnDuration);
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / duration;
+                    float easeT = 1f - Mathf.Pow(1f - t, 3f); 
+                    float currentRot = Mathf.Lerp(windUpAngle, rotEnd, easeT);
+                    _spriteRenderer.transform.localRotation = baseRot * Quaternion.Euler(0f, 0f, currentRot);
+                    ApplyConeDamage(targetDir, 160f, hitTargets);
+                    yield return null;
                 }
-                yield return null;
+
+                yield return new WaitForSeconds(0.05f);
+
+                elapsed = 0f;
+                duration = 0.1f;
+                Quaternion startRetRot = _spriteRenderer.transform.localRotation;
+                while (elapsed < duration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / duration;
+                    float easeT = t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f; 
+                    _spriteRenderer.transform.localRotation = Quaternion.Lerp(startRetRot, _originalSpriteRot, easeT);
+                    yield return null;
+                }
             }
 
-            if (_spriteRenderer != null) _spriteRenderer.transform.localRotation = _originalSpriteRot;
+            if (_spriteRenderer != null)
+            {
+                _spriteRenderer.transform.localPosition = Vector3.zero;
+                _spriteRenderer.transform.localRotation = _originalSpriteRot;
+            }
         }
 
-                private void ApplyConeDamage(Vector3 attackDir, float angleRange, HashSet<Collider> hitTargets)
+        private void PlayAttackVFX(Vector3 position, Vector3 direction)
+        {
+            if (_weaponData == null || _weaponData.AttackEffectPrefab == null) return;
+            
+            float angle = Mathf.Atan2(direction.z, direction.x) * Mathf.Rad2Deg;
+            Quaternion vfxRot = Quaternion.Euler(90f, 0f, angle - 90f);
+            
+            GameObject vfx = Instantiate(_weaponData.AttackEffectPrefab, position, vfxRot);
+            Destroy(vfx, 1.5f);
+        }
+
+        private void ApplyConeDamage(Vector3 attackDir, float angleRange, HashSet<Collider> hitTargets)
         {
             float finalDamage = _weaponData.BaseDamage * LevelDmgMultiplier * _owner.DmgMulti;
 
-            // 플레이어(중심)를 기준으로 사거리 내의 모든 타겟 검색
             Collider[] victims = Physics.OverlapSphere(_owner.transform.position, EffectiveDistance, _enemyLayer);
             
             foreach (var victim in victims)
             {
-                // 이미 이번 공격에서 맞은 적은 패스 (중복 타격 방지)
                 if (hitTargets.Contains(victim)) continue;
 
                 Vector3 dirToVictim = (victim.transform.position - _owner.transform.position);
                 dirToVictim.y = 0;
                 dirToVictim.Normalize();
 
-                // 부채꼴 각도 검사 (기준 방향과 몬스터 방향 사이의 각도)
                 float angle = Vector3.Angle(attackDir, dirToVictim);
                 if (angle <= angleRange * 0.5f)
                 {
-                    // 히트 판정
                     hitTargets.Add(victim);
 
                     if (victim.TryGetComponent<MonsterController>(out var monster))
@@ -293,20 +308,17 @@ namespace ProjectOverdrive.Controllers
             }
         }
 
-                private void OnDrawGizmosSelected()
+        private void OnDrawGizmosSelected()
         {
             if (_owner == null) return;
             
-            // 1. 공격 사거리 원
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(_owner.transform.position, EffectiveDistance);
 
-            // 2. 현재 공격 방향 (기준선)
             Gizmos.color = Color.cyan;
             Vector3 forwardLine = _lastAttackDir * EffectiveDistance;
             Gizmos.DrawRay(_owner.transform.position, forwardLine);
 
-            // 3. 베기 부채꼴 범위 (대략 160도)
             Vector3 leftLine = Quaternion.Euler(0f, -80f, 0f) * _lastAttackDir * EffectiveDistance;
             Vector3 rightLine = Quaternion.Euler(0f, 80f, 0f) * _lastAttackDir * EffectiveDistance;
             
