@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using ProjectOverdrive.Data;
 
@@ -6,6 +6,14 @@ namespace ProjectOverdrive.Controllers
 {
     public class MeleeWeapon : MonoBehaviour
     {
+        [Header("Attack Mixing (공격 패턴 섞기)")]
+        [Tooltip("찌르기(Thrust)와 베기(Swing)를 섞어서 쓸지 여부")]
+        [SerializeField] private bool _mixAttackTypes = true;
+
+        [Tooltip("찌르기 발동 확률 (0 = 무조건 베기, 1 = 무조건 찌르기, 0.5 = 반반)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float _thrustProbability = 0.5f;
+
         [Header("Settings")]
         [SerializeField] private float _orbitRadius = 1.3f;
         [SerializeField] private float _orbitHeight = 0.5f;
@@ -20,7 +28,7 @@ namespace ProjectOverdrive.Controllers
         private bool _isAttacking = false;
 
         private Vector3 _lastAttackDir = Vector3.forward;
-        private Quaternion _originalSpriteRot; // 스프라이트의 초기 방향(눕혀진 각도) 보존용
+        private Quaternion _originalSpriteRot;
 
         public float EffectiveDistance => (_weaponData != null && _owner != null)
             ? _weaponData.BaseAttackDistance + _owner.AdditionalRange
@@ -121,8 +129,15 @@ namespace ProjectOverdrive.Controllers
                 _spriteRenderer.flipX = _lastAttackDir.x < 0f;
             }
 
-            // 타입에 따라 분기 처리
-            if (_weaponData.AttackType == WeaponAttackType.Thrust)
+            // 🎯 혼합 공격 분기 로직
+            bool useThrust = _weaponData.AttackType == WeaponAttackType.Thrust;
+            if (_mixAttackTypes)
+            {
+                // 인스펙터에 설정한 확률(0~1)에 따라 공격 방식 결정
+                useThrust = UnityEngine.Random.value <= _thrustProbability;
+            }
+
+            if (useThrust)
             {
                 yield return StartCoroutine(ThrustRoutine(startPos, targetDir));
             }
@@ -134,13 +149,22 @@ namespace ProjectOverdrive.Controllers
             _isAttacking = false;
         }
 
-        // 1. 찌르기 모션
+        // 1. 찌르기 모션 (날이 적을 향하게 개선됨)
         private IEnumerator ThrustRoutine(Vector3 startPos, Vector3 targetDir)
         {
             Vector3 thrustTarget = startPos + targetDir * (EffectiveDistance * 0.8f);
             float elapsed = 0f;
             float thrustDuration = 0.08f;
             bool hitApplied = false;
+
+            // 🎯 날이 적을 향하도록 Z축 회전 각도 계산 (-90도는 칼이 위를 보고 있을 때의 보정값)
+            float targetAngle = Mathf.Atan2(targetDir.z, targetDir.x) * Mathf.Rad2Deg - 90f;
+            Quaternion thrustRot = _originalSpriteRot * Quaternion.Euler(0f, 0f, targetAngle);
+
+            if (_spriteRenderer != null)
+            {
+                _spriteRenderer.transform.localRotation = thrustRot;
+            }
 
             while (elapsed < thrustDuration)
             {
@@ -159,6 +183,7 @@ namespace ProjectOverdrive.Controllers
             elapsed = 0f;
             float returnDuration = 0.12f;
             Vector3 currentThrustPos = transform.position;
+            Quaternion currentRot = _spriteRenderer != null ? _spriteRenderer.transform.localRotation : _originalSpriteRot;
 
             while (elapsed < returnDuration)
             {
@@ -168,27 +193,33 @@ namespace ProjectOverdrive.Controllers
                 Vector3 currentOrbitTarget = _owner.transform.position + new Vector3(Mathf.Cos(rad), _orbitHeight, Mathf.Sin(rad)) * _orbitRadius;
 
                 transform.position = Vector3.Lerp(currentThrustPos, currentOrbitTarget, t);
+
+                // 자연스럽게 원래 각도로 복구
+                if (_spriteRenderer != null)
+                {
+                    _spriteRenderer.transform.localRotation = Quaternion.Lerp(currentRot, _originalSpriteRot, t);
+                }
+
                 yield return null;
             }
+
+            if (_spriteRenderer != null) _spriteRenderer.transform.localRotation = _originalSpriteRot;
         }
 
-        // 2. 휘두르기(휩쓰기) 모션 - 완벽한 와이퍼 형태로 개선!
+        // 2. 휘두르기 모션
         private IEnumerator SwingRoutine(Vector3 startPos, Vector3 targetDir)
         {
             float elapsed = 0f;
-            float swingDuration = 0.18f; // 살짝 여유를 줘서 모션을 부드럽게
+            float swingDuration = 0.18f;
             bool hitApplied = false;
 
-            // 플레이어를 중심으로 부채꼴 궤적의 각도 계산
             float baseAngle = Mathf.Atan2(targetDir.z, targetDir.x) * Mathf.Rad2Deg;
             float startAngle = baseAngle - 70f;
             float endAngle = baseAngle + 70f;
 
-            // 무기가 실제로 와이퍼처럼 꺾이는(로컬 Z회전) 각도
             float rotStart = 70f;
             float rotEnd = -70f;
 
-            // 왼쪽 타격 시 역방향 와이퍼 
             if (targetDir.x < 0f)
             {
                 startAngle = baseAngle + 70f;
@@ -202,22 +233,18 @@ namespace ProjectOverdrive.Controllers
                 elapsed += Time.deltaTime;
                 float t = elapsed / swingDuration;
 
-                // 1. 플레이어를 중심으로 와이퍼처럼 둥글게 궤적을 그리며 이동
                 float currentAngle = Mathf.Lerp(startAngle, endAngle, t);
                 float rad = currentAngle * Mathf.Deg2Rad;
 
-                // EffectiveDistance를 기준으로 넓게 휩씁니다
                 Vector3 swingOffset = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * (EffectiveDistance * 0.75f);
                 transform.position = _owner.transform.position + swingOffset;
 
-                // 2. 무기 자체도 궤적에 맞춰 와이퍼처럼 꺾임 (Pivot이 Bottom일 경우 완벽하게 작동)
                 if (_spriteRenderer != null)
                 {
                     float currentRot = Mathf.Lerp(rotStart, rotEnd, t);
                     _spriteRenderer.transform.localRotation = _originalSpriteRot * Quaternion.Euler(0f, 0f, currentRot);
                 }
 
-                // 스윙 범위 내 적 모두 타격
                 if (!hitApplied && t >= 0.4f)
                 {
                     ApplyDamage(targetDir);
@@ -226,7 +253,6 @@ namespace ProjectOverdrive.Controllers
                 yield return null;
             }
 
-            // 복귀 로직
             elapsed = 0f;
             float returnDuration = 0.12f;
             Vector3 currentPos = transform.position;
@@ -241,7 +267,6 @@ namespace ProjectOverdrive.Controllers
                 Vector3 currentOrbitTarget = _owner.transform.position + new Vector3(Mathf.Cos(rad), _orbitHeight, Mathf.Sin(rad)) * _orbitRadius;
                 transform.position = Vector3.Lerp(currentPos, currentOrbitTarget, t);
 
-                // 돌아올 때 회전도 원래 궤도로 스무스하게 복구
                 if (_spriteRenderer != null)
                 {
                     _spriteRenderer.transform.localRotation = Quaternion.Lerp(currentRotQ, _originalSpriteRot, t);
@@ -250,7 +275,6 @@ namespace ProjectOverdrive.Controllers
                 yield return null;
             }
 
-            // 복귀 완료 후 혹시 모를 오차를 위해 강제 초기화
             if (_spriteRenderer != null) _spriteRenderer.transform.localRotation = _originalSpriteRot;
         }
 
@@ -275,11 +299,9 @@ namespace ProjectOverdrive.Controllers
         private void OnDrawGizmosSelected()
         {
             if (_owner == null) return;
-            // 빨간 원: 적을 감지하는 사거리
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(_owner.transform.position, EffectiveDistance);
 
-            // 노란 원: 실제로 피해가 들어가는 물리적 Hit Area 반경
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, EffectiveArea);
         }

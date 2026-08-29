@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eada54b8794108a4ca4371adb5c435fb, type: 3}
   m_Name: data_player_default
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.PlayerData
+  _characterName: Unknown
+  _playerPrefab: {fileID: 1200241804745829709, guid: c16c78ce885bd9c419ae397f0af521e9, type: 3}
   _baseMaxHp: 100
   _baseMoveSpeed: 5
   _baseAttackSpeed: 1
@@ -19,9 +21,9 @@ MonoBehaviour:
   _baseAdditionalRange: 0
   _baseMagnetRange: 2.5
   _initialWeapons:
-  - {fileID: 11400000, guid: 2e031e78b7ea6f54c95be113c677e41c, type: 2}
-  - {fileID: 11400000, guid: fe2d8cd6e53326844995b8347240b47f, type: 2}
-  - {fileID: 11400000, guid: c974164a6b7798c4294f1bd4901e321c, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}

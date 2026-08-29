@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -32,15 +32,11 @@ namespace ProjectOverdrive.UI
         [SerializeField] private int _baseRerollCost = 5;
 
         [Header("Sell Settings (판매 설정)")]
-        [Tooltip("2레벨 무기 판매 시 적용될 원가 대비 보너스(%)")]
         [SerializeField] private float _level2SellBonusPercent = 20f;
-        [Tooltip("3레벨 무기 판매 시 적용될 원가 대비 보너스(%)")]
         [SerializeField] private float _level3SellBonusPercent = 30f;
 
         [Header("Tooltip UI")]
-        [Tooltip("판매가 표시용 툴팁 패널 (캔버스에 새로 만들어 연결)")]
         [SerializeField] private GameObject _tooltipPanel;
-        [Tooltip("판매가 텍스트")]
         [SerializeField] private TextMeshProUGUI _tooltipText;
 
         private PlayerController _player;
@@ -56,14 +52,37 @@ namespace ProjectOverdrive.UI
             {
                 _tooltipPanel.SetActive(false);
 
-                // [해결됨] 툴팁이 마우스를 가려서 깜빡이는 현상을 원천 차단하기 위해 
-                // CanvasGroup을 동적으로 추가하고 마우스 감지(Raycast)를 꺼버립니다.
                 if (!_tooltipPanel.TryGetComponent<CanvasGroup>(out var canvasGroup))
                 {
                     canvasGroup = _tooltipPanel.AddComponent<CanvasGroup>();
                 }
                 canvasGroup.blocksRaycasts = false;
                 canvasGroup.interactable = false;
+
+                if (_tooltipText != null)
+                {
+                    _tooltipText.transform.SetParent(_tooltipPanel.transform, false);
+                    _tooltipText.gameObject.SetActive(true);
+
+                    RectTransform panelRect = _tooltipPanel.GetComponent<RectTransform>();
+                    if (panelRect != null)
+                    {
+                        panelRect.anchorMin = new Vector2(0, 0);
+                        panelRect.anchorMax = new Vector2(0, 0);
+                        panelRect.pivot = new Vector2(0, 0);
+                        panelRect.sizeDelta = new Vector2(250, 90);
+                    }
+
+                    RectTransform textRect = _tooltipText.GetComponent<RectTransform>();
+                    if (textRect != null)
+                    {
+                        textRect.anchorMin = Vector2.zero;
+                        textRect.anchorMax = Vector2.one;
+                        textRect.sizeDelta = Vector2.zero;
+                        textRect.anchoredPosition = Vector2.zero;
+                    }
+                    _tooltipText.alignment = TextAlignmentOptions.Center;
+                }
             }
         }
 
@@ -71,9 +90,8 @@ namespace ProjectOverdrive.UI
         {
             if (_tooltipPanel != null && _tooltipPanel.activeSelf && Mouse.current != null)
             {
-                // [수정됨] 마우스 포인터가 글자를 가리지 않게 우측 하단으로 살짝(Offset) 밀어줍니다.
                 Vector2 mousePos = Mouse.current.position.ReadValue();
-                _tooltipPanel.transform.position = mousePos + new Vector2(30f, -30f);
+                _tooltipPanel.transform.position = mousePos + new Vector2(25f, 25f);
             }
         }
 
@@ -113,7 +131,7 @@ namespace ProjectOverdrive.UI
             }
         }
 
-        #region Shop Item Rolling (구매 로직)
+        #region Shop Item Rolling
 
         private void RollShopItems()
         {
@@ -139,6 +157,12 @@ namespace ProjectOverdrive.UI
             }
 
             UpdateRerollButtonDisplay();
+
+            // 상점 아이템이 리롤된 직후, 현재 소지금을 바탕으로 즉시 색상을 판별합니다.
+            if (_player != null)
+            {
+                UpdateCurrencyDisplay(_player.Currency);
+            }
         }
 
         private void OnBuyItem(UI_ShopItemSlot slot, WeaponData weapon, int price)
@@ -201,7 +225,7 @@ namespace ProjectOverdrive.UI
 
         #endregion
 
-        #region Sell & Tooltip Logic (판매 및 툴팁)
+        #region Sell & Tooltip Logic
 
         private int GetSellPrice(WeaponData weapon, int level)
         {
@@ -226,6 +250,8 @@ namespace ProjectOverdrive.UI
             _player.AddCurrency(finalPrice);
 
             UpdateEquippedWeaponsDisplay();
+
+            if (_tooltipPanel != null) _tooltipPanel.SetActive(false);
         }
 
         private void OnHoverWeaponEnter(int slotIndex)
@@ -233,12 +259,13 @@ namespace ProjectOverdrive.UI
             if (_player == null) return;
             WeaponData weapon = _player.WeaponInfo[slotIndex];
             if (weapon == null) return;
+
             int level = _player.WeaponLevels[slotIndex];
             int finalPrice = GetSellPrice(weapon, level);
+
             if (_tooltipPanel != null) _tooltipPanel.SetActive(true);
             if (_tooltipText != null)
             {
-                // 무기 타입을 판별하여 텍스트 상단에 추가했습니다!
                 string typeStr = weapon.AttackType == WeaponAttackType.Thrust ? "찌르기" : "휘두르기";
                 _tooltipText.text = $"[타입: {typeStr}]\n우클릭 판매: <color=yellow>+{finalPrice} G</color>";
             }
@@ -263,6 +290,18 @@ namespace ProjectOverdrive.UI
         {
             if (_currencyText != null) _currencyText.text = $" {currentCurrency} G";
             UpdateRerollButtonDisplay();
+
+            // 모든 상점 아이템 슬롯에 대해 현재 소지금과 비교하여 텍스트 색상을 바꿉니다.
+            if (_itemSlots != null)
+            {
+                foreach (var slot in _itemSlots)
+                {
+                    if (slot != null && slot.gameObject.activeSelf)
+                    {
+                        slot.UpdateAffordability(currentCurrency);
+                    }
+                }
+            }
         }
 
         private void UpdateRerollButtonDisplay()

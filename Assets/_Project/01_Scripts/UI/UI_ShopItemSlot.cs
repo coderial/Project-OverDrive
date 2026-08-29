@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -66,12 +66,30 @@ namespace ProjectOverdrive.UI
             _onBuyCallback?.Invoke(this, _currentWeapon, _price);
         }
 
-        public void SetSoldOut()
+                public void SetSoldOut()
         {
             IsSoldOut = true;
             if (_soldOutOverlay != null) _soldOutOverlay.SetActive(true);
             if (_buyButton != null) _buyButton.interactable = false;
-            if (_priceText != null) _priceText.text = "품절";
+            if (_priceText != null) 
+            {
+                _priceText.text = "Sold Out";
+                _priceText.color = Color.white;
+            }
+        }
+
+        public void UpdateAffordability(int currentCurrency)
+        {
+            if (IsSoldOut || _priceText == null) return;
+            
+            if (currentCurrency >= _price)
+            {
+                _priceText.color = Color.white;
+            }
+            else
+            {
+                _priceText.color = Color.red;
+            }
         }
     }
 }
