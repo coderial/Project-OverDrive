@@ -57,6 +57,7 @@ namespace ProjectOverdrive.Managers
 
         private void Start()
         {
+            SoundManager.Instance.PlayBgm("MainBGM");
             ResolveReferences();
 
             if (!ValidateConfiguration())
@@ -182,6 +183,7 @@ namespace ProjectOverdrive.Managers
             spawnManager.CancelPendingSpawns();
             ChangeStatus(WaveStatus.Wave_Clear);
             IsWaveRunning = false;
+            SoundManager.Instance.PlaySfx("Clear");
             _waveClearCoroutine = StartCoroutine(PlayWaveClearSequence());
         }
 

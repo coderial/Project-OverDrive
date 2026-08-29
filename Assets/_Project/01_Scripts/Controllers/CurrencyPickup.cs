@@ -1,3 +1,4 @@
+using ProjectOverdrive.Managers;
 using UnityEngine;
 
 namespace ProjectOverdrive.Controllers
@@ -11,7 +12,7 @@ namespace ProjectOverdrive.Controllers
 
         [SerializeField, Min(0.1f)] private float attractionSpeed = 10f;
         [SerializeField, Min(0.01f)] private float collectionDistance = 0.25f;
-        [SerializeField, Min(0f)] private float attractionDelay = 0.1f;
+        [SerializeField, Min(0f)] private float attractionDelay = 0.3f;
 
         private Transform _cachedTransform;
         private PooledObject _pooledObject;
@@ -138,6 +139,7 @@ namespace ProjectOverdrive.Controllers
             }
 
             _isCollected = true;
+            SoundManager.Instance.PlaySfx("GetCoin");
             collector.AddCurrency(CurrencyAmount);
 
             if (_pooledObject == null)

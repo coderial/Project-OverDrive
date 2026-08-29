@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 using ProjectOverdrive.Controllers;
+using ProjectOverdrive.Managers;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Collider))]
@@ -127,16 +128,19 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
 
             if (isHomeRun)
             {
+                SoundManager.Instance.PlaySfx("Home-Run");
                 StartCoroutine(HomeRunRoutine(hitDirection));
             }
             else
             {
+                SoundManager.Instance.PlaySfx("Hurt");
                 ReleaseToPool();
             }
             return;
         }
         else
         {
+            SoundManager.Instance.PlaySfx("Hurt");
             StartCoroutine(FlashRoutine());
         }
 
