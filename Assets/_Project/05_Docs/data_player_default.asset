@@ -19,9 +19,9 @@ MonoBehaviour:
   _baseAdditionalRange: 0
   _baseMagnetRange: 2.5
   _initialWeapons:
-  - {fileID: 11400000, guid: 5985c4b1d35a3e342b6785f08678692f, type: 2}
-  - {fileID: 11400000, guid: 5985c4b1d35a3e342b6785f08678692f, type: 2}
-  - {fileID: 11400000, guid: 5985c4b1d35a3e342b6785f08678692f, type: 2}
+  - {fileID: 11400000, guid: 2e031e78b7ea6f54c95be113c677e41c, type: 2}
+  - {fileID: 11400000, guid: fe2d8cd6e53326844995b8347240b47f, type: 2}
+  - {fileID: 11400000, guid: c974164a6b7798c4294f1bd4901e321c, type: 2}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
