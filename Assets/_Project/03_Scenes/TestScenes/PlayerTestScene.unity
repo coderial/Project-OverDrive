@@ -294,6 +294,7 @@ MonoBehaviour:
   _dmgMulti: 0
   _additionalRange: 0
   _magnetRange: 0
+  _currency: 0
   _weaponInfo:
   - {fileID: 0}
   - {fileID: 0}
@@ -315,6 +316,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
   m_Actions: {fileID: -944628639613478452, guid: 3550db4492a28694a8a39209749617b2, type: 3}
   m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
   m_DeviceLostEvent:
     m_PersistentCalls:
       m_Calls: []

@@ -131,6 +131,9 @@ namespace ProjectOverdrive.Controllers
             _lv = 1;
             _exp = 0.0f;
             _maxExp = CalculateMaxExp(_lv);
+
+            // UI가 플레이어보다 먼저 활성화된 경우에도 초기 체력을 즉시 동기화한다.
+            OnHpChanged?.Invoke(_currentHp, _maxHp);
         }
 
         public void SpawnEquippedWeapons()
@@ -213,7 +216,14 @@ namespace ProjectOverdrive.Controllers
         {
             if (_isDead || damage <= 0) return;
 
+            int appliedDamage = Mathf.Min(_currentHp, damage);
             _currentHp = Mathf.Max(0, _currentHp - damage);
+
+            if (DamageTextManager.Instance != null)
+            {
+                DamageTextManager.Instance.ShowPlayerDamage(appliedDamage, transform.position);
+            }
+
             OnHpChanged?.Invoke(_currentHp, _maxHp);
             if (_currentHp <= 0) Die();
         }
