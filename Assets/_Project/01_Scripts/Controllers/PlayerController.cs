@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -68,7 +68,7 @@ namespace ProjectOverdrive.Controllers
         public event Action<int> OnLevelUp;
         public event Action<int> OnCurrencyChanged;
 
-        private void Awake()
+                private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
             CurrencyPickup.SharedCollector = this;
@@ -79,7 +79,27 @@ namespace ProjectOverdrive.Controllers
 
             _playerHealth.OnDied += HandlePlayerDied;
 
+            // 1. 캐릭터 데이터를 먼저 덮어씌웁니다.
+            if (ProjectOverdrive.Managers.SessionManager.Instance != null)
+            {
+                if (ProjectOverdrive.Managers.SessionManager.Instance.SelectedPlayer != null)
+                {
+                    _playerData = ProjectOverdrive.Managers.SessionManager.Instance.SelectedPlayer;
+                }
+            }
+
+            // 2. 캐릭터 데이터를 기반으로 스탯과 기본 무기를 세팅합니다.
             InitializeStats();
+
+            // 3. 세팅이 끝난 후, 내가 선택한 무기를 0번 슬롯(메인 무기)에 강제로 덮어씌웁니다!
+            if (ProjectOverdrive.Managers.SessionManager.Instance != null)
+            {
+                if (ProjectOverdrive.Managers.SessionManager.Instance.SelectedWeapon != null)
+                {
+                    _weaponInfo[0] = ProjectOverdrive.Managers.SessionManager.Instance.SelectedWeapon;
+                    _weaponLevels[0] = 1;
+                }
+            }
         }
 
         private void Start()

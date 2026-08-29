@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1587949381971924516}
   - component: {fileID: 7377559170249126224}
+  - component: {fileID: 1963046447279129419}
   m_Layer: 0
   m_Name: LongSword
   m_TagString: Untagged
@@ -91,3 +92,22 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &1963046447279129419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7032023349747050622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a6470fed2783644d920f42d1c474e0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Controllers.MeleeWeapon
+  _mixAttackTypes: 1
+  _thrustProbability: 0.2
+  _orbitRadius: 1.3
+  _orbitHeight: 0.5
+  _enemyLayer:
+    serializedVersion: 2
+    m_Bits: 64
