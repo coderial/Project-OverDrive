@@ -50,10 +50,10 @@ namespace ProjectOverdrive.UI
                 }
                 if (_statsText != null)
                 {
-                    // 새로 분리된 사거리(Distance)와 범위(Area)를 둘 다 표시합니다.
-                    _statsText.text = $"공격력: {_currentWeapon.BaseDamage:F0}\n" +
+                    string typeStr = _currentWeapon.AttackType == WeaponAttackType.Thrust ? "찌르기" : "휘두르기";
+                    _statsText.text = $"[타입: {typeStr}]\n" +
+                                      $"공격력: {_currentWeapon.BaseDamage:F0}\n" +
                                       $"공격주기: {_currentWeapon.BaseAttackSpeed:F1}s\n" +
-                                      $"사거리: {_currentWeapon.BaseAttackDistance:F1}\n" +
                                       $"범위: {_currentWeapon.BaseHitArea:F1}";
                 }
                 if (_priceText != null) _priceText.text = $"{_price} G";

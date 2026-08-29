@@ -106,6 +106,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06e6517dfa7941c4c8947dadbd7cc122, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterController
+  _homeRunSpeed: 25
+  _homeRunHeight: 30
+  _homeRunSpinSpeed: 1500
 --- !u!65 &-7015972954734098005
 BoxCollider:
   m_ObjectHideFlags: 0

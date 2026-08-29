@@ -14,10 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
   _weaponName: Zweihender
   _icon: {fileID: -1571663846, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
-  _weaponPrefab: {fileID: 7591303510702099441, guid: e1ad0babdc76300468c7b62e14d9ed16, type: 3}
+  _weaponPrefab: {fileID: 1820094273687435600, guid: 36ba561bf39a57149ac5305987e0b0c2, type: 3}
   _level1Sprite: {fileID: -1571663846, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 492071829, guid: 39d6f395756e42642a7a91298e35c1a7, type: 3}
   _level3Sprite: {fileID: -1344952263, guid: 39d6f395756e42642a7a91298e35c1a7, type: 3}
+  _purchasePrice: 50
+  _sellPrice: 25
+  _attackType: 1
   _baseDamage: 10
   _baseAttackSpeed: 1
   _baseAttackDistance: 1.5

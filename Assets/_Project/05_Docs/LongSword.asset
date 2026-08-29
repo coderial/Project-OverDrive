@@ -14,10 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
   _weaponName: LongSword
   _icon: {fileID: 1206161759, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
-  _weaponPrefab: {fileID: 5765523811341871249, guid: 3636e8c0250796249b8921d12cd49a1e, type: 3}
-  _level1Sprite: {fileID: 21300000, guid: 0210b927022d6464db890e665ef3e290, type: 2}
+  _weaponPrefab: {fileID: 7032023349747050622, guid: d47b578e4c535b04b93c15e0cbbb2d1a, type: 3}
+  _level1Sprite: {fileID: 1206161759, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 1653598663, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level3Sprite: {fileID: -1074480937, guid: 39d6f395756e42642a7a91298e35c1a7, type: 3}
+  _purchasePrice: 50
+  _sellPrice: 25
+  _attackType: 1
   _baseDamage: 10
   _baseAttackSpeed: 1
   _baseAttackDistance: 1.5
