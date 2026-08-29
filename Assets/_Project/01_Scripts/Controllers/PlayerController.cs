@@ -253,7 +253,7 @@ namespace ProjectOverdrive.Controllers
             targetVelocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = targetVelocity;
         }
-        #endregion
+        
 
         #region Combat & Progression
 
@@ -359,3 +359,4 @@ namespace ProjectOverdrive.Controllers
         }
     }
 }
+    #endregion
