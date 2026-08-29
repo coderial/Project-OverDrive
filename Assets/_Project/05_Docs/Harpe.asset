@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e12bb9d3aab90d8449588747e7e8137f, type: 3}
-  m_Name: Dagger
+  m_Name: Harpe
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
-  _weaponName: Dagger
-  _icon: {fileID: 0}
-  _weaponPrefab: {fileID: 1248316296389551195, guid: 5b311c36e1f5a144eb49c5f7c6a7d5eb, type: 3}
-  _level1Sprite: {fileID: 0}
-  _level2Sprite: {fileID: 0}
-  _level3Sprite: {fileID: 0}
-  _baseDamage: 5
+  _weaponName: Harpe
+  _icon: {fileID: 21300000, guid: b238a0dfa26b1094fb0c7b103a3d0ef7, type: 2}
+  _weaponPrefab: {fileID: 8174808520126043028, guid: 406fac6c528e4064ab7d81917711a75e, type: 3}
+  _level1Sprite: {fileID: 21300000, guid: b238a0dfa26b1094fb0c7b103a3d0ef7, type: 2}
+  _level2Sprite: {fileID: -469871127, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
+  _level3Sprite: {fileID: -1114671329, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
+  _baseDamage: 10
   _baseAttackSpeed: 1
   _baseAttackDistance: 1.5
   _baseHitArea: 0.8
