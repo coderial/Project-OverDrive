@@ -12,17 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e12bb9d3aab90d8449588747e7e8137f, type: 3}
   m_Name: Hellbird
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
-  _weaponName: Hellbird
+  _weaponName: "\uD560\uBC84\uB4DC"
   _icon: {fileID: -1281205514, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _weaponPrefab: {fileID: 5453643475657917384, guid: 3391951185698d04497b2a66c39e2a9a, type: 3}
   _level1Sprite: {fileID: -1281205514, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 1661622461, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level3Sprite: {fileID: -1476348947, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
-  _purchasePrice: 50
-  _sellPrice: 25
+  _purchasePrice: 20
+  _sellPrice: 10
   _attackType: 0
+  _mixAttackTypes: 0
+  _thrustProbability: 0.5
   _baseDamage: 20
-  _baseAttackSpeed: 1.5
+  _baseAttackSpeed: 1
   _baseAttackDistance: 1.5
   _baseHitArea: 0.5
   _baseKnockback: 2

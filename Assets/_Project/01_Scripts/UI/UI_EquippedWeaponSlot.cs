@@ -6,7 +6,7 @@ using System;
 
 namespace ProjectOverdrive.UI
 {
-    public class UI_EquippedWeaponSlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+    public class UI_EquippedWeaponSlot : MonoBehaviour, IPointerClickHandler
     {
         [SerializeField] private Image _iconImage;
         [SerializeField] private Image _emptySlotBackground;
@@ -14,18 +14,13 @@ namespace ProjectOverdrive.UI
         private int _slotIndex;
         private WeaponData _currentWeapon;
 
-        // 델리게이트 (UI_Shop과 통신)
-        private Action<int> _onRightClick;
-        private Action<int> _onHoverEnter;
-        private Action _onHoverExit;
+        private Action<int, RectTransform> _onClick;
 
-        public void Setup(WeaponData weapon, int level, int slotIndex, Action<int> onRightClick, Action<int> onHoverEnter, Action onHoverExit)
+        public void Setup(WeaponData weapon, int level, int slotIndex, Action<int, RectTransform> onClick)
         {
             _currentWeapon = weapon;
             _slotIndex = slotIndex;
-            _onRightClick = onRightClick;
-            _onHoverEnter = onHoverEnter;
-            _onHoverExit = onHoverExit;
+            _onClick = onClick;
 
             if (weapon != null)
             {
@@ -50,29 +45,16 @@ namespace ProjectOverdrive.UI
             }
         }
 
-        // 우클릭 판매 감지
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (_currentWeapon != null && eventData.button == PointerEventData.InputButton.Right)
+            if (_currentWeapon != null && eventData.button == PointerEventData.InputButton.Left)
             {
-                _onRightClick?.Invoke(_slotIndex);
-                _onHoverExit?.Invoke(); // 무기가 팔리면 툴팁 강제 제거
+                _onClick?.Invoke(_slotIndex, transform as RectTransform);
             }
-        }
-
-        // 마우스 올렸을 때 툴팁 띄우기
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            if (_currentWeapon != null)
+            else if (_currentWeapon == null && eventData.button == PointerEventData.InputButton.Left)
             {
-                _onHoverEnter?.Invoke(_slotIndex);
+                _onClick?.Invoke(-1, null);
             }
-        }
-
-        // 마우스 내렸을 때 툴팁 지우기
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            _onHoverExit?.Invoke();
         }
     }
 }

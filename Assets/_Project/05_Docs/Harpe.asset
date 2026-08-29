@@ -12,17 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e12bb9d3aab90d8449588747e7e8137f, type: 3}
   m_Name: Harpe
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
-  _weaponName: Harpe
+  _weaponName: "\uD558\uB974\uD398"
   _icon: {fileID: 21300000, guid: b238a0dfa26b1094fb0c7b103a3d0ef7, type: 2}
   _weaponPrefab: {fileID: 1233690072667244720, guid: 0971ce1889e1cf24c9b4528adfae6e30, type: 3}
   _level1Sprite: {fileID: 322775672, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: -469871127, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level3Sprite: {fileID: -1114671329, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
-  _purchasePrice: 50
-  _sellPrice: 25
+  _purchasePrice: 20
+  _sellPrice: 10
   _attackType: 1
+  _mixAttackTypes: 0
+  _thrustProbability: 0.5
   _baseDamage: 15
-  _baseAttackSpeed: 1.5
+  _baseAttackSpeed: 1
   _baseAttackDistance: 1.5
   _baseHitArea: 0.8
   _baseKnockback: 2

@@ -15,8 +15,8 @@ MonoBehaviour:
   duration: 75
   spawnInterval: 0.5
   monsters:
-  - monster: {fileID: 11400000, guid: 91baba79fcafeeb47836e684e05f2551, type: 2}
-    spawnWeight: 3
+  - monster: {fileID: 11400000, guid: f65034b8051d82a4cb46ec4c47bc3f9e, type: 2}
+    spawnWeight: 1
     spawnSettings:
       origin: 0
       formation: 0
@@ -27,11 +27,22 @@ MonoBehaviour:
       escapeArcDegrees: 90
       minimumMonsterSpacing: 0.75
   - monster: {fileID: 11400000, guid: 57eab2a2e9ed85a47ad91d9ef5c800c0, type: 2}
-    spawnWeight: 1
+    spawnWeight: 4
+    spawnSettings:
+      origin: 0
+      formation: 1
+      countPerBatch: 5
+      formationRadius: 2
+      minimumDistanceFromPlayer: 6
+      maximumDistanceFromPlayer: 12
+      escapeArcDegrees: 90
+      minimumMonsterSpacing: 0.75
+  - monster: {fileID: 11400000, guid: d2ff3935979bed848a33dd1f376ead50, type: 2}
+    spawnWeight: 2
     spawnSettings:
       origin: 0
       formation: 0
-      countPerBatch: 20
+      countPerBatch: 5
       formationRadius: 2
       minimumDistanceFromPlayer: 6
       maximumDistanceFromPlayer: 12

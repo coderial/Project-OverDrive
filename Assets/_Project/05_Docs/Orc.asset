@@ -17,6 +17,6 @@ MonoBehaviour:
   currencyPrefab: {fileID: 8589163003255209784, guid: 4903a4f4d97a245469faffa341e4a138, type: 3}
   attackPower: 10
   contactDamageInterval: 0.5
-  maxHealth: 10
+  maxHealth: 20
   moveSpeed: 3
   stoppingDistance: 0.1

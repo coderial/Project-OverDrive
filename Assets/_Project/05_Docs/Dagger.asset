@@ -12,19 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e12bb9d3aab90d8449588747e7e8137f, type: 3}
   m_Name: Dagger
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
-  _weaponName: Dagger
+  _weaponName: "\uB2E8\uAC80"
   _icon: {fileID: 21300000, guid: 9392d6c92d2b8814493b136e7cd9eb20, type: 2}
   _weaponPrefab: {fileID: 4437111455080646177, guid: ed59dde3a8ce50445b4b9599c7b93474, type: 3}
   _level1Sprite: {fileID: -1021890786, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 1823106341, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level3Sprite: {fileID: 1084917216, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
-  _purchasePrice: 50
-  _sellPrice: 25
+  _purchasePrice: 20
+  _sellPrice: 10
   _attackType: 0
   _mixAttackTypes: 1
   _thrustProbability: 0.5
-  _baseDamage: 5
-  _baseAttackSpeed: 3
+  _baseDamage: 8
+  _baseAttackSpeed: 2.5
   _baseAttackDistance: 1
   _baseHitArea: 1
   _baseKnockback: 2

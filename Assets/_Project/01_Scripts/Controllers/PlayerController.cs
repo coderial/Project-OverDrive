@@ -12,6 +12,7 @@ namespace ProjectOverdrive.Controllers
     public class PlayerController : MonoBehaviour
     {
         private const int MAX_WEAPON_SLOTS = 6;
+        public const int MAX_WEAPON_LEVEL = 3;
 
         [Header("Data Asset")]
         [SerializeField] private PlayerData _playerData;
@@ -308,13 +309,108 @@ namespace ProjectOverdrive.Controllers
         public bool UpgradeWeapon(int slotIndex)
         {
             if (slotIndex < 0 || slotIndex >= MAX_WEAPON_SLOTS) return false;
-            if (_weaponInfo[slotIndex] != null && _weaponLevels[slotIndex] < 3)
+            if (_weaponInfo[slotIndex] != null && _weaponLevels[slotIndex] < MAX_WEAPON_LEVEL)
             {
                 _weaponLevels[slotIndex]++;
                 SpawnEquippedWeapons();
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// 상점 무기를 구매합니다. 빈 슬롯을 우선 사용하고, 슬롯이 모두 찬 경우에만
+        /// 같은 종류의 1레벨 무기를 구매 재료로 삼아 한 단계 강화합니다.
+        /// </summary>
+        public bool TryPurchaseWeapon(WeaponData weapon, int price)
+        {
+            if (weapon == null || price < 0 || _currency < price) return false;
+
+            int emptySlotIndex = FindEmptyWeaponSlot();
+            int upgradeSlotIndex = emptySlotIndex < 0
+                ? FindMatchingWeaponSlot(weapon, 1)
+                : -1;
+
+            if (emptySlotIndex < 0 && upgradeSlotIndex < 0) return false;
+            if (price > 0 && !SpendCurrency(price)) return false;
+
+            if (emptySlotIndex >= 0)
+            {
+                _weaponInfo[emptySlotIndex] = weapon;
+                _weaponLevels[emptySlotIndex] = 1;
+            }
+            else
+            {
+                _weaponLevels[upgradeSlotIndex]++;
+            }
+
+            SpawnEquippedWeapons();
+            return true;
+        }
+
+        public bool CanSynthesizeWeapon(int slotIndex)
+        {
+            if (!IsValidEquippedSlot(slotIndex)) return false;
+
+            int level = _weaponLevels[slotIndex];
+            if (level >= MAX_WEAPON_LEVEL) return false;
+
+            return FindMatchingWeaponSlot(_weaponInfo[slotIndex], level, slotIndex) >= 0;
+        }
+
+        /// <summary>
+        /// 선택 슬롯과 같은 종류/같은 레벨의 다른 무기를 재료로 소비하고
+        /// 선택 슬롯의 무기를 한 단계 강화합니다.
+        /// </summary>
+        public bool TrySynthesizeWeapon(int slotIndex)
+        {
+            if (!CanSynthesizeWeapon(slotIndex)) return false;
+
+            int materialSlotIndex = FindMatchingWeaponSlot(
+                _weaponInfo[slotIndex], _weaponLevels[slotIndex], slotIndex);
+
+            if (materialSlotIndex < 0) return false;
+
+            _weaponInfo[materialSlotIndex] = null;
+            _weaponLevels[materialSlotIndex] = 0;
+            _weaponLevels[slotIndex]++;
+            SpawnEquippedWeapons();
+            return true;
+        }
+
+        private int FindEmptyWeaponSlot()
+        {
+            for (int i = 0; i < _weaponInfo.Length; i++)
+            {
+                if (_weaponInfo[i] == null) return i;
+            }
+
+            return -1;
+        }
+
+        private int FindMatchingWeaponSlot(WeaponData weapon, int level, int excludedSlotIndex = -1)
+        {
+            for (int i = 0; i < _weaponInfo.Length; i++)
+            {
+                if (i == excludedSlotIndex || _weaponLevels[i] != level) continue;
+                if (AreSameWeaponType(_weaponInfo[i], weapon)) return i;
+            }
+
+            return -1;
+        }
+
+        private bool IsValidEquippedSlot(int slotIndex)
+        {
+            return slotIndex >= 0 &&
+                   slotIndex < _weaponInfo.Length &&
+                   slotIndex < _weaponLevels.Length &&
+                   _weaponInfo[slotIndex] != null;
+        }
+
+        private static bool AreSameWeaponType(WeaponData first, WeaponData second)
+        {
+            if (first == null || second == null) return false;
+            return first == second || string.Equals(first.WeaponName, second.WeaponName, StringComparison.Ordinal);
         }
 
         // 특정 슬롯의 무기를 제거 (상점 판매용)

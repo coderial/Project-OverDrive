@@ -12,17 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e12bb9d3aab90d8449588747e7e8137f, type: 3}
   m_Name: Rapier
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Data.WeaponData
-  _weaponName: Rapier
+  _weaponName: "\uB808\uC774\uD53C\uC5B4"
   _icon: {fileID: 486346732, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _weaponPrefab: {fileID: 4992788837294698158, guid: 5be0a59f8f3c08849be9b2720a6aac69, type: 3}
   _level1Sprite: {fileID: 486346732, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level2Sprite: {fileID: 810310792, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
   _level3Sprite: {fileID: -2005067967, guid: dce804fd6859c7d40ab2149fb8463da3, type: 3}
-  _purchasePrice: 50
-  _sellPrice: 25
+  _purchasePrice: 20
+  _sellPrice: 10
   _attackType: 0
-  _baseDamage: 11
-  _baseAttackSpeed: 1
-  _baseAttackDistance: 1.5
+  _mixAttackTypes: 0
+  _thrustProbability: 0.5
+  _baseDamage: 22
+  _baseAttackSpeed: 0.8
+  _baseAttackDistance: 4
   _baseHitArea: 0.8
   _baseKnockback: 2
