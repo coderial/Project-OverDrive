@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 3973579255533496863}
   - component: {fileID: 4225589472523620401}
   - component: {fileID: 2646020084745679909}
+  - component: {fileID: 1535948940923238469}
   m_Layer: 7
   m_Name: Player
   m_TagString: Untagged
@@ -141,9 +142,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _weaponOrbitRadius: 1.2
-  _modelTransform: {fileID: 0}
-  _spriteRenderer: {fileID: 0}
-  _rotationSpeed: 15
+  _playerAnimator: {fileID: 0}
   _lv: 1
   _exp: 0
   _maxExp: 10
@@ -181,8 +180,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.15, y: 0.22, z: 0.01}
-  m_Center: {x: 0, y: -0.08, z: 0}
+  m_Size: {x: 0.1, y: 0.18, z: 0.01}
+  m_Center: {x: 0, y: 0.01, z: 0}
 --- !u!114 &4225589472523620401
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -235,3 +234,17 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1535948940923238469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1200241804745829709}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbe4a69acf2c40f7abe3c22bbd27eb99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.Controllers.PlayerAnimator
+  _spriteRenderer: {fileID: 4267872283760332181}
+  _animator: {fileID: 2646020084745679909}

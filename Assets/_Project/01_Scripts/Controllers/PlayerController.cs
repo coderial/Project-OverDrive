@@ -7,24 +7,10 @@ using ProjectOverdrive.Data;
 namespace ProjectOverdrive.Controllers
 {
     [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(PlayerAnimator))]
     public class PlayerController : MonoBehaviour, IDamageable
     {
         private const int MAX_WEAPON_SLOTS = 6;
-        private const float FRONT_IDLE_BLEND = 0.0f;
-        private const float BACK_IDLE_BLEND = 0.2f;
-        private const float SIDE_IDLE_BLEND = 0.4f;
-        private const float FRONT_WALK_BLEND = 0.6f;
-        private const float BACK_WALK_BLEND = 0.8f;
-        private const float SIDE_WALK_BLEND = 1.0f;
-
-        private static readonly int BlendParameterHash = Animator.StringToHash("Blend");
-
-        private enum FacingDirection
-        {
-            Front,
-            Side,
-            Back
-        }
 
         [Header("Data Asset")]
         [SerializeField] private PlayerData _playerData;
@@ -37,11 +23,8 @@ namespace ProjectOverdrive.Controllers
         [Tooltip("무기 공전 반경")]
         [SerializeField] private float _weaponOrbitRadius = 1.3f;
 
-        [Header("Visual Components")]
-        [SerializeField] private Transform _modelTransform;
-        [SerializeField] private SpriteRenderer _spriteRenderer;
-        [SerializeField] private Animator _animator;
-        //[SerializeField] private float _rotationSpeed = 15.0f;
+        [Header("Animation")]
+        [SerializeField] private PlayerAnimator _playerAnimator;
 
         [Header("Runtime Status")]
         [SerializeField] private int _lv = 1;
@@ -65,7 +48,6 @@ namespace ProjectOverdrive.Controllers
         private Rigidbody _rb;
         private Vector2 _moveInput;
         private Vector3 _moveDirection;
-        private FacingDirection _facingDirection = FacingDirection.Front;
         private bool _isDead;
 
         public int Lv => _lv;
@@ -92,12 +74,10 @@ namespace ProjectOverdrive.Controllers
         {
             _rb = GetComponent<Rigidbody>();
             CurrencyPickup.SharedCollector = this;
-            if (_spriteRenderer == null) _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-            if (_animator == null) _animator = GetComponentInChildren<Animator>();
-            if (_modelTransform == null) _modelTransform = transform;
+            if (_playerAnimator == null) _playerAnimator = GetComponent<PlayerAnimator>();
+            if (_playerAnimator == null) _playerAnimator = gameObject.AddComponent<PlayerAnimator>();
 
             InitializeStats();
-            UpdateMovementAnimation(Vector2.zero);
         }
 
         private void Start()
@@ -188,63 +168,7 @@ namespace ProjectOverdrive.Controllers
         {
             _moveInput = value.Get<Vector2>();
             _moveDirection = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
-
-            if (_spriteRenderer != null && Mathf.Abs(_moveInput.x) > 0.01f)
-                _spriteRenderer.flipX = _moveInput.x < 0f;
-        }
-
-        private void UpdateMovementAnimation(Vector2 moveInput)
-        {
-            bool isWalking = moveInput.sqrMagnitude > 0.001f;
-
-            if (isWalking)
-            {
-                if (Mathf.Abs(moveInput.x) >= Mathf.Abs(moveInput.y))
-                {
-                    _facingDirection = FacingDirection.Side;
-
-                    if (_spriteRenderer != null)
-                    {
-                        _spriteRenderer.flipX = moveInput.x < 0f;
-                    }
-                }
-                else
-                {
-                    _facingDirection = moveInput.y > 0f
-                        ? FacingDirection.Back
-                        : FacingDirection.Front;
-
-                    if (_spriteRenderer != null)
-                    {
-                        _spriteRenderer.flipX = false;
-                    }
-                }
-            }
-
-            if (_animator != null)
-            {
-                _animator.SetFloat(BlendParameterHash, GetMovementBlend(_facingDirection, isWalking));
-            }
-        }
-
-        private static float GetMovementBlend(FacingDirection facingDirection, bool isWalking)
-        {
-            if (isWalking)
-            {
-                return facingDirection switch
-                {
-                    FacingDirection.Back => BACK_WALK_BLEND,
-                    FacingDirection.Side => SIDE_WALK_BLEND,
-                    _ => FRONT_WALK_BLEND
-                };
-            }
-
-            return facingDirection switch
-            {
-                FacingDirection.Back => BACK_IDLE_BLEND,
-                FacingDirection.Side => SIDE_IDLE_BLEND,
-                _ => FRONT_IDLE_BLEND
-            };
+            _playerAnimator.UpdateMovement(_moveInput);
         }
 
         private void Move()
@@ -357,6 +281,7 @@ namespace ProjectOverdrive.Controllers
         {
             if (CurrencyPickup.SharedCollector == this) CurrencyPickup.SharedCollector = null;
         }
+
+        #endregion
     }
 }
-    #endregion
