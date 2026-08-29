@@ -18,6 +18,9 @@ namespace ProjectOverdrive.Controllers
         private float _cooldownTimer = 0f;
         private bool _isAttacking = false;
 
+        // 마지막으로 공격한 방향을 기억 (초기값: 앞)
+        private Vector3 _lastAttackDir = Vector3.forward;
+
         public float EffectiveDistance => (_weaponData != null && _owner != null)
             ? _weaponData.BaseAttackDistance + _owner.AdditionalRange
             : 1.5f;
@@ -35,7 +38,6 @@ namespace ProjectOverdrive.Controllers
             _enemyLayer = enemyLayer;
             _orbitRadius = orbitRadius;
 
-            // 레벨에 맞는 무기 스프라이트(외형) 씌우기
             SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
             if (sr != null && _weaponData != null)
             {
@@ -65,8 +67,13 @@ namespace ProjectOverdrive.Controllers
             Vector3 offset = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * _orbitRadius;
             offset.y = _orbitHeight + Mathf.Sin(Time.time * 3f + _orbitAngleDeg) * 0.1f;
 
-            // 회전(rotation) 로직 제거됨 - 오직 위치만 갱신
             transform.position = _owner.transform.position + offset;
+
+            // 공전 중에도 마지막으로 공격했던 방향을 계속 바라보게 유지
+            if (_lastAttackDir.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.LookRotation(_lastAttackDir, Vector3.up);
+            }
         }
 
         private void CheckAndAttackNearestEnemy()
@@ -108,7 +115,9 @@ namespace ProjectOverdrive.Controllers
             targetDir.y = 0;
             targetDir.Normalize();
 
-            // 방향 회전(transform.rotation) 제거됨 - 프리팹 원본 회전값 유지
+            // 이번 공격에서 찌를 타겟의 방향을 갱신하고 저장
+            _lastAttackDir = targetDir;
+            transform.rotation = Quaternion.LookRotation(_lastAttackDir, Vector3.up);
 
             Vector3 thrustTarget = startPos + targetDir * (EffectiveDistance * 0.8f);
             float elapsed = 0f;
@@ -139,6 +148,7 @@ namespace ProjectOverdrive.Controllers
                 float t = elapsed / returnDuration;
                 float rad = _orbitAngleDeg * Mathf.Deg2Rad;
                 Vector3 currentOrbitTarget = _owner.transform.position + new Vector3(Mathf.Cos(rad), _orbitHeight, Mathf.Sin(rad)) * _orbitRadius;
+
                 transform.position = Vector3.Lerp(currentThrustPos, currentOrbitTarget, t);
                 yield return null;
             }
