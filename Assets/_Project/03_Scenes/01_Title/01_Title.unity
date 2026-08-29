@@ -151,8 +151,7 @@ MonoBehaviour:
   _startButton: {fileID: 757793043}
   _optionButton: {fileID: 1687821704}
   _exitButton: {fileID: 687931773}
-  _optionPanel: {fileID: 1790335740}
-  _nextSceneName: PlayerTestScene
+  _nextSceneName: 02_Ready	
 --- !u!4 &136418238
 Transform:
   m_ObjectHideFlags: 0

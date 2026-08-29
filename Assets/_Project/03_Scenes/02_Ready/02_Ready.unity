@@ -524,7 +524,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d146fe81a5bffc4286034b76a5617a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOverdrive.UI.UI_ReadyScene
-  _nextSceneName: PlayerTestScene
+  _nextSceneName: 03_Play
   _characterPool:
   - {fileID: 11400000, guid: 594836cf7e89dee49b08514e7b80522a, type: 2}
   - {fileID: 0}
@@ -539,6 +539,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9caa7f7b2690d42419962863110b9221, type: 2}
   - {fileID: 11400000, guid: f9beb841679cf184087b6e53591e1b85, type: 2}
   - {fileID: 11400000, guid: 2e8e9ebbebafe874481db072efddf4d5, type: 2}
+  - {fileID: 11400000, guid: 5985c4b1d35a3e342b6785f08678692f, type: 2}
   _characterPanel: {fileID: 1707381713}
   _weaponPanel: {fileID: 744715739}
   _characterGrid: {fileID: 926432433}

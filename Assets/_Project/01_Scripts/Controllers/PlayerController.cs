@@ -195,7 +195,7 @@ namespace ProjectOverdrive.Controllers
             UpdateMoveDirection();
         }
 
-        private void Move()
+                private void Move()
         {
             if (!_isMovementEnabled)
             {
@@ -204,8 +204,29 @@ namespace ProjectOverdrive.Controllers
             }
 
             Vector3 targetVelocity = _moveDirection * _moveSpeed;
+            
+            // 맵 경계(절벽) 제한: 맵 크기 30x30 기준 (-15 ~ 15)
+            // 플레이어 모델 크기를 고려해 -14.5 ~ 14.5로 제한
+            float mapLimit = 14.5f; 
+            Vector3 pos = _rb.position;
+            
+            if (pos.x <= -mapLimit && targetVelocity.x < 0) targetVelocity.x = 0;
+            if (pos.x >= mapLimit && targetVelocity.x > 0) targetVelocity.x = 0;
+            if (pos.z <= -mapLimit && targetVelocity.z < 0) targetVelocity.z = 0;
+            if (pos.z >= mapLimit && targetVelocity.z > 0) targetVelocity.z = 0;
+
             targetVelocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = targetVelocity;
+
+            float clampedX = Mathf.Clamp(pos.x, -mapLimit, mapLimit);
+            float clampedZ = Mathf.Clamp(pos.z, -mapLimit, mapLimit);
+            
+            if (Mathf.Abs(pos.x - clampedX) > 0.01f || Mathf.Abs(pos.z - clampedZ) > 0.01f)
+            {
+                pos.x = clampedX;
+                pos.z = clampedZ;
+                _rb.MovePosition(pos);
+            }
         }
 
         public void SetMovementEnabled(bool isEnabled)

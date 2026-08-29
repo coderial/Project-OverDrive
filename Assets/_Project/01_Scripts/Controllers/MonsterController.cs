@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using ProjectOverdrive.Controllers;
 using ProjectOverdrive.Managers;
@@ -111,11 +111,11 @@ public sealed class MonsterController : MonoBehaviour, IPoolable, IDamageable
         if (_data == null || damage <= 0f || _isDead) return;
 
         Vector3 hitPosition = _cachedTransform.position;
-        float appliedDamage = Mathf.Min(CurrentHealth, damage);
+        // float appliedDamage = Mathf.Min(CurrentHealth, damage);
         CurrentHealth = Mathf.Max(0f, CurrentHealth - damage);
 
         if (DamageTextManager.Instance != null)
-            DamageTextManager.Instance.ShowMonsterDamage(appliedDamage, hitPosition);
+            DamageTextManager.Instance.ShowMonsterDamage(damage, hitPosition);
 
         if (CurrentHealth <= 0f)
         {

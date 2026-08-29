@@ -21,8 +21,10 @@ MonoBehaviour:
   _purchasePrice: 50
   _sellPrice: 25
   _attackType: 1
-  _baseDamage: 10
-  _baseAttackSpeed: 2
+  _mixAttackTypes: 0
+  _thrustProbability: 0.5
+  _baseDamage: 20
+  _baseAttackSpeed: 0.8
   _baseAttackDistance: 2
-  _baseHitArea: 0.8
+  _baseHitArea: 1.5
   _baseKnockback: 2

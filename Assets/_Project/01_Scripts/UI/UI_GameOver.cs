@@ -1,8 +1,9 @@
-using System.Collections;
+﻿using System.Collections;
 using ProjectOverdrive.Controllers;
 using ProjectOverdrive.Managers;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ProjectOverdrive.UI
 {
@@ -181,6 +182,13 @@ namespace ProjectOverdrive.UI
         private void OnDisable()
         {
             UnbindPlayer();
+        }
+
+        public void ReturnToTitle()
+        {
+            Time.timeScale = 1f;
+            if (SessionManager.Instance != null) Destroy(SessionManager.Instance.gameObject);
+            SceneManager.LoadScene("01_Title");
         }
 
         private void OnValidate()

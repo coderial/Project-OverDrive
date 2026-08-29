@@ -1,12 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace ProjectOverdrive.Data
 {
     public enum WeaponAttackType
     {
-        Thrust, // 찌르기
-        Swing   // 휘두르기(휩쓰기)
+        Thrust,
+        Swing
     }
 
     [CreateAssetMenu(fileName = "data_weapon_default", menuName = "ProjectOverdrive/Data/Weapon Data", order = 1)]
@@ -26,31 +26,29 @@ namespace ProjectOverdrive.Data
         [SerializeField] private Sprite _level3Sprite;
 
         [Header("Economy (상점)")]
-        [Tooltip("상점에서 구매할 때 기본 가격")]
         [SerializeField] private int _purchasePrice = 50;
-        [Tooltip("상점에 되팔 때 기본 가격")]
         [SerializeField] private int _sellPrice = 25;
 
         [Header("Base Combat Stats")]
-        [Tooltip("공격 방식 (찌르기 / 휘두르기)")]
+        [Tooltip("공격 방식 (찌르기/ 휘두르기) - 믹스 활성화 시 기본이 되는 모션")]
         [SerializeField] private WeaponAttackType _attackType = WeaponAttackType.Thrust;
 
-        [Tooltip("기본 공격력")]
-        [SerializeField] private float _baseDamage = 10.0f;
+        [Header("Attack Mixing")]
+        [Tooltip("찌르기와 베기를 섞어서 쓸지 여부")]
+        [SerializeField] private bool _mixAttackTypes = false;
 
-        [Tooltip("기본 공격 속도 계수")]
+        [Tooltip("찌르기 발동 확률 (0 = 무조건 베기, 1 = 무조건 찌르기, 0.5 = 반반)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float _thrustProbability = 0.5f;
+
+        [Header("Combat Numbers")]
+        [SerializeField] private float _baseDamage = 10.0f;
         [SerializeField] private float _baseAttackSpeed = 1.0f;
 
-        [Header("Distance & Area (사거리 및 타격범위)")]
-        [Tooltip("공격 거리: 얼마나 멀리 있는 적을 감지하고 공격할 것인가")]
+        [Header("Distance & Area (사거리/타격범위)")]
         [FormerlySerializedAs("_baseAttackRange")]
         [SerializeField] private float _baseAttackDistance = 1.5f;
-
-        [Tooltip("공격 범위: 무기가 공격 시 실제 피해가 입혀지는 피격 판정 넓이")]
         [SerializeField] private float _baseHitArea = 0.8f;
-
-        [Header("Impact")]
-        [Tooltip("타격 시 적을 밀쳐내는 넉백 강도")]
         [SerializeField] private float _baseKnockback = 2.0f;
 
         // 프로퍼티
@@ -60,7 +58,10 @@ namespace ProjectOverdrive.Data
 
         public int PurchasePrice => _purchasePrice;
         public int SellPrice => _sellPrice;
+
         public WeaponAttackType AttackType => _attackType;
+        public bool MixAttackTypes => _mixAttackTypes;
+        public float ThrustProbability => _thrustProbability;
 
         public float BaseDamage => _baseDamage;
         public float BaseAttackSpeed => _baseAttackSpeed;
@@ -70,9 +71,13 @@ namespace ProjectOverdrive.Data
 
         public Sprite GetSpriteForLevel(int level)
         {
-            if (level >= 3 && _level3Sprite != null) return _level3Sprite;
-            if (level == 2 && _level2Sprite != null) return _level2Sprite;
-            return _level1Sprite;
+            switch (level)
+            {
+                case 1: return _level1Sprite != null ? _level1Sprite : _icon;
+                case 2: return _level2Sprite != null ? _level2Sprite : _level1Sprite;
+                case 3: return _level3Sprite != null ? _level3Sprite : _level2Sprite;
+                default: return _icon;
+            }
         }
     }
 }
