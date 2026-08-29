@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using ProjectOverdrive.Data;
 
@@ -6,14 +7,6 @@ namespace ProjectOverdrive.Controllers
 {
     public class MeleeWeapon : MonoBehaviour
     {
-        [Header("Attack Mixing (공격 패턴 섞기)")]
-        [Tooltip("찌르기(Thrust)와 베기(Swing)를 섞어서 쓸지 여부")]
-        [SerializeField] private bool _mixAttackTypes = true;
-
-        [Tooltip("찌르기 발동 확률 (0 = 무조건 베기, 1 = 무조건 찌르기, 0.5 = 반반)")]
-        [Range(0f, 1f)]
-        [SerializeField] private float _thrustProbability = 0.5f;
-
         [Header("Settings")]
         [SerializeField] private float _orbitRadius = 1.3f;
         [SerializeField] private float _orbitHeight = 0.5f;
@@ -51,7 +44,6 @@ namespace ProjectOverdrive.Controllers
             if (_spriteRenderer != null && _weaponData != null)
             {
                 _originalSpriteRot = _spriteRenderer.transform.localRotation;
-
                 Sprite levelSprite = _weaponData.GetSpriteForLevel(_weaponLevel);
                 if (levelSprite != null) _spriteRenderer.sprite = levelSprite;
             }
@@ -109,7 +101,7 @@ namespace ProjectOverdrive.Controllers
             }
         }
 
-        private IEnumerator AttackRoutine(Transform target)
+                private IEnumerator AttackRoutine(Transform target)
         {
             _isAttacking = true;
 
@@ -117,11 +109,10 @@ namespace ProjectOverdrive.Controllers
             float totalCooldown = 1.0f / Mathf.Max(0.1f, attackSpeedFactor);
             _cooldownTimer = totalCooldown;
 
-            Vector3 startPos = transform.position;
-            Vector3 targetDir = (target.position - transform.position);
+            // 🎯 기준 방향을 '플레이어 -> 적'으로 깔끔하게 통일합니다.
+            Vector3 targetDir = (target.position - _owner.transform.position);
             targetDir.y = 0;
             targetDir.Normalize();
-
             _lastAttackDir = targetDir;
 
             if (_spriteRenderer != null)
@@ -129,127 +120,118 @@ namespace ProjectOverdrive.Controllers
                 _spriteRenderer.flipX = _lastAttackDir.x < 0f;
             }
 
-            // 🎯 혼합 공격 분기 로직
+            // 공격이 시작되는 깔끔한 고정 위치 (플레이어와 적 사이의 궤도 반경 위치)
+            Vector3 attackStartPos = _owner.transform.position + targetDir * _orbitRadius;
+
             bool useThrust = _weaponData.AttackType == WeaponAttackType.Thrust;
-            if (_mixAttackTypes)
+            if (_weaponData.MixAttackTypes)
             {
-                // 인스펙터에 설정한 확률(0~1)에 따라 공격 방식 결정
-                useThrust = UnityEngine.Random.value <= _thrustProbability;
+                useThrust = UnityEngine.Random.value <= _weaponData.ThrustProbability;
             }
 
             if (useThrust)
             {
-                yield return StartCoroutine(ThrustRoutine(startPos, targetDir));
+                yield return StartCoroutine(ThrustRoutine(attackStartPos, targetDir));
             }
             else
             {
-                yield return StartCoroutine(SwingRoutine(startPos, targetDir));
+                yield return StartCoroutine(SwingRoutine(attackStartPos, targetDir));
             }
 
             _isAttacking = false;
         }
 
-        // 1. 찌르기 모션 (날이 적을 향하게 개선됨)
-        private IEnumerator ThrustRoutine(Vector3 startPos, Vector3 targetDir)
+                                private IEnumerator ThrustRoutine(Vector3 startPos, Vector3 targetDir)
         {
-            Vector3 thrustTarget = startPos + targetDir * (EffectiveDistance * 0.8f);
+            Vector3 thrustTarget = _owner.transform.position + targetDir * EffectiveDistance;
+            
+            float targetAngle = Mathf.Atan2(targetDir.z, targetDir.x) * Mathf.Rad2Deg - 45f;
+            Quaternion thrustRot = Quaternion.Euler(90f, 0f, targetAngle);
+
+            if (_spriteRenderer != null) _spriteRenderer.transform.localRotation = thrustRot;
+
+            float aimDuration = 0.1f;
+            Vector3 aimPos = startPos - targetDir * 0.3f;
             float elapsed = 0f;
-            float thrustDuration = 0.08f;
-            bool hitApplied = false;
 
-            // 🎯 날이 적을 향하도록 Z축 회전 각도 계산 (-90도는 칼이 위를 보고 있을 때의 보정값)
-            float targetAngle = Mathf.Atan2(targetDir.z, targetDir.x) * Mathf.Rad2Deg - 90f;
-            Quaternion thrustRot = _originalSpriteRot * Quaternion.Euler(0f, 0f, targetAngle);
-
-            if (_spriteRenderer != null)
+            while (elapsed < aimDuration)
             {
-                _spriteRenderer.transform.localRotation = thrustRot;
+                elapsed += Time.deltaTime;
+                transform.position = Vector3.Lerp(startPos, aimPos, elapsed / aimDuration);
+                yield return null;
             }
+
+            float thrustDuration = 0.05f;
+            elapsed = 0f;
+            HashSet<Collider> hitTargets = new HashSet<Collider>();
 
             while (elapsed < thrustDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / thrustDuration;
-                transform.position = Vector3.Lerp(startPos, thrustTarget, t);
-
-                if (!hitApplied && t >= 0.5f)
-                {
-                    ApplyDamage(targetDir);
-                    hitApplied = true;
-                }
+                transform.position = Vector3.Lerp(aimPos, thrustTarget, elapsed / thrustDuration);
+                
+                // 찌르기: 진행 방향을 기준으로 좁은 각도(60도) 내의 적 타격
+                ApplyConeDamage(targetDir, 60f, hitTargets);
+                
                 yield return null;
             }
 
             elapsed = 0f;
-            float returnDuration = 0.12f;
+            float returnDuration = 0.15f;
             Vector3 currentThrustPos = transform.position;
             Quaternion currentRot = _spriteRenderer != null ? _spriteRenderer.transform.localRotation : _originalSpriteRot;
 
             while (elapsed < returnDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / returnDuration;
                 float rad = _orbitAngleDeg * Mathf.Deg2Rad;
                 Vector3 currentOrbitTarget = _owner.transform.position + new Vector3(Mathf.Cos(rad), _orbitHeight, Mathf.Sin(rad)) * _orbitRadius;
-
-                transform.position = Vector3.Lerp(currentThrustPos, currentOrbitTarget, t);
-
-                // 자연스럽게 원래 각도로 복구
+                transform.position = Vector3.Lerp(currentThrustPos, currentOrbitTarget, elapsed / returnDuration);
+                
                 if (_spriteRenderer != null)
                 {
-                    _spriteRenderer.transform.localRotation = Quaternion.Lerp(currentRot, _originalSpriteRot, t);
+                    _spriteRenderer.transform.localRotation = Quaternion.Lerp(currentRot, _originalSpriteRot, elapsed / returnDuration);
                 }
-
                 yield return null;
             }
 
             if (_spriteRenderer != null) _spriteRenderer.transform.localRotation = _originalSpriteRot;
         }
 
-        // 2. 휘두르기 모션
-        private IEnumerator SwingRoutine(Vector3 startPos, Vector3 targetDir)
+                                private IEnumerator SwingRoutine(Vector3 fixedPos, Vector3 targetDir)
         {
             float elapsed = 0f;
-            float swingDuration = 0.18f;
-            bool hitApplied = false;
+            float swingDuration = 0.18f; 
+            HashSet<Collider> hitTargets = new HashSet<Collider>();
 
             float baseAngle = Mathf.Atan2(targetDir.z, targetDir.x) * Mathf.Rad2Deg;
-            float startAngle = baseAngle - 70f;
-            float endAngle = baseAngle + 70f;
-
-            float rotStart = 70f;
-            float rotEnd = -70f;
+            float rotStart = 80f;
+            float rotEnd = -80f;
 
             if (targetDir.x < 0f)
             {
-                startAngle = baseAngle + 70f;
-                endAngle = baseAngle - 70f;
-                rotStart = -70f;
-                rotEnd = 70f;
+                rotStart = -80f;
+                rotEnd = 80f;
             }
+
+            Quaternion baseRot = Quaternion.Euler(90f, 0f, baseAngle - 45f);
 
             while (elapsed < swingDuration)
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / swingDuration;
 
-                float currentAngle = Mathf.Lerp(startAngle, endAngle, t);
-                float rad = currentAngle * Mathf.Deg2Rad;
-
-                Vector3 swingOffset = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * (EffectiveDistance * 0.75f);
-                transform.position = _owner.transform.position + swingOffset;
+                transform.position = fixedPos;
 
                 if (_spriteRenderer != null)
                 {
                     float currentRot = Mathf.Lerp(rotStart, rotEnd, t);
-                    _spriteRenderer.transform.localRotation = _originalSpriteRot * Quaternion.Euler(0f, 0f, currentRot);
+                    _spriteRenderer.transform.localRotation = baseRot * Quaternion.Euler(0f, 0f, currentRot);
                 }
 
-                if (!hitApplied && t >= 0.4f)
-                {
-                    ApplyDamage(targetDir);
-                    hitApplied = true;
-                }
+                // 베기: 궤적 전체를 커버하기 위해 타겟 방향 기준 넓은 부채꼴(160도) 검사
+                ApplyConeDamage(targetDir, 160f, hitTargets);
+
                 yield return null;
             }
 
@@ -261,49 +243,76 @@ namespace ProjectOverdrive.Controllers
             while (elapsed < returnDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / returnDuration;
-
                 float rad = _orbitAngleDeg * Mathf.Deg2Rad;
                 Vector3 currentOrbitTarget = _owner.transform.position + new Vector3(Mathf.Cos(rad), _orbitHeight, Mathf.Sin(rad)) * _orbitRadius;
-                transform.position = Vector3.Lerp(currentPos, currentOrbitTarget, t);
+                transform.position = Vector3.Lerp(currentPos, currentOrbitTarget, elapsed / returnDuration);
 
                 if (_spriteRenderer != null)
                 {
-                    _spriteRenderer.transform.localRotation = Quaternion.Lerp(currentRotQ, _originalSpriteRot, t);
+                    _spriteRenderer.transform.localRotation = Quaternion.Lerp(currentRotQ, _originalSpriteRot, elapsed / returnDuration);
                 }
-
                 yield return null;
             }
 
             if (_spriteRenderer != null) _spriteRenderer.transform.localRotation = _originalSpriteRot;
         }
 
-        private void ApplyDamage(Vector3 attackDir)
+                private void ApplyConeDamage(Vector3 attackDir, float angleRange, HashSet<Collider> hitTargets)
         {
             float finalDamage = _weaponData.BaseDamage * LevelDmgMultiplier * _owner.DmgMulti;
 
-            Collider[] victims = Physics.OverlapSphere(transform.position, EffectiveArea, _enemyLayer);
+            // 플레이어(중심)를 기준으로 사거리 내의 모든 타겟 검색
+            Collider[] victims = Physics.OverlapSphere(_owner.transform.position, EffectiveDistance, _enemyLayer);
+            
             foreach (var victim in victims)
             {
-                if (victim.TryGetComponent<MonsterController>(out var monster))
+                // 이미 이번 공격에서 맞은 적은 패스 (중복 타격 방지)
+                if (hitTargets.Contains(victim)) continue;
+
+                Vector3 dirToVictim = (victim.transform.position - _owner.transform.position);
+                dirToVictim.y = 0;
+                dirToVictim.Normalize();
+
+                // 부채꼴 각도 검사 (기준 방향과 몬스터 방향 사이의 각도)
+                float angle = Vector3.Angle(attackDir, dirToVictim);
+                if (angle <= angleRange * 0.5f)
                 {
-                    monster.TakeWeaponDamage(finalDamage, attackDir, _weaponData.BaseKnockback, _weaponLevel);
-                }
-                else if (victim.TryGetComponent<IDamageable>(out var damageable))
-                {
-                    damageable.TakeDamage(finalDamage, attackDir, _weaponData.BaseKnockback);
+                    // 히트 판정
+                    hitTargets.Add(victim);
+
+                    if (victim.TryGetComponent<MonsterController>(out var monster))
+                    {
+                        monster.TakeWeaponDamage(finalDamage, attackDir, _weaponData.BaseKnockback, _weaponLevel);
+                    }
+                    else if (victim.TryGetComponent<IDamageable>(out var damageable))
+                    {
+                        damageable.TakeDamage(finalDamage, attackDir, _weaponData.BaseKnockback);
+                    }
                 }
             }
         }
 
-        private void OnDrawGizmosSelected()
+                private void OnDrawGizmosSelected()
         {
             if (_owner == null) return;
+            
+            // 1. 공격 사거리 원
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(_owner.transform.position, EffectiveDistance);
 
+            // 2. 현재 공격 방향 (기준선)
+            Gizmos.color = Color.cyan;
+            Vector3 forwardLine = _lastAttackDir * EffectiveDistance;
+            Gizmos.DrawRay(_owner.transform.position, forwardLine);
+
+            // 3. 베기 부채꼴 범위 (대략 160도)
+            Vector3 leftLine = Quaternion.Euler(0f, -80f, 0f) * _lastAttackDir * EffectiveDistance;
+            Vector3 rightLine = Quaternion.Euler(0f, 80f, 0f) * _lastAttackDir * EffectiveDistance;
+            
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, EffectiveArea);
+            Gizmos.DrawRay(_owner.transform.position, leftLine);
+            Gizmos.DrawRay(_owner.transform.position, rightLine);
+            Gizmos.DrawLine(_owner.transform.position + leftLine, _owner.transform.position + rightLine);
         }
     }
 }

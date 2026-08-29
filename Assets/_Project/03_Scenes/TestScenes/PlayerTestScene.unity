@@ -1216,21 +1216,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaveManager
   player: {fileID: 174521590}
-  monsterData: {fileID: 11400000, guid: 91baba79fcafeeb47836e684e05f2551, type: 2}
-  _shopUI: {fileID: 1060886653}
+  spawnManager: {fileID: 0}
+  shopUI: {fileID: 1060886653}
+  waveClearUI: {fileID: 0}
+  currencyCollectionDuration: 0.75
+  waves: []
   waveStartDelay: 1
-  spawnInterval: 0.25
-  _waveDurations:
-  - 20
-  - 30
-  - 40
-  - 50
-  - 60
-  - 70
-  - 75
-  - 80
-  - 85
-  - 90
 --- !u!4 &275239366
 Transform:
   m_ObjectHideFlags: 0
