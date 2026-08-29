@@ -14,6 +14,7 @@ namespace ProjectOverdrive.Managers
         Open_Shop = 3,
         Game_Clear = 4,
         Wave_Clear = 5,
+        Game_Fail = 6,
     }
 
     [DisallowMultipleComponent]
@@ -40,8 +41,10 @@ namespace ProjectOverdrive.Managers
         private WaveStatus _currentStatus = WaveStatus.Preparation;
         private WaveData _currentWaveData;
         private PlayerController _playerController;
+        private PlayerHealth _playerHealth;
         private float _statusEndTime;
         private float _nextSpawnTime;
+        private Coroutine _waveClearCoroutine;
 
         public WaveStatus CurrentStatus => _currentStatus;
         public WaveData CurrentWaveData => _currentWaveData;
@@ -63,6 +66,7 @@ namespace ProjectOverdrive.Managers
                 return;
             }
 
+            _playerHealth.OnDied += FailWave;
             spawnManager.Initialize(player);
             BeginWave();
         }
@@ -94,6 +98,7 @@ namespace ProjectOverdrive.Managers
                 case WaveStatus.Open_Shop:
                 case WaveStatus.Game_Clear:
                 case WaveStatus.Wave_Clear:
+                case WaveStatus.Game_Fail:
                     break;
             }
         }
@@ -111,6 +116,7 @@ namespace ProjectOverdrive.Managers
 
             _currentWaveData = waves[CurrentWave];
             CurrentWave++;
+            _playerHealth.RestoreToFull();
             ChangeStatus(WaveStatus.Preparation);
             _statusEndTime = Time.time + waveStartDelay;
             IsWaveRunning = true;
@@ -124,6 +130,30 @@ namespace ProjectOverdrive.Managers
 
             Debug.Log($"[WaveManager] 상점 종료 - Wave {CurrentWave + 1}을 시작합니다.", this);
             BeginWave();
+        }
+
+        public void FailWave()
+        {
+            if (_currentStatus == WaveStatus.Game_Fail || _currentStatus == WaveStatus.Game_Clear)
+            {
+                return;
+            }
+
+            if (_waveClearCoroutine != null)
+            {
+                StopCoroutine(_waveClearCoroutine);
+                _waveClearCoroutine = null;
+            }
+
+            spawnManager?.CancelPendingSpawns();
+            int returnedMonsterCount = spawnManager != null
+                ? spawnManager.DespawnAllMonsters()
+                : 0;
+            ChangeStatus(WaveStatus.Game_Fail);
+            IsWaveRunning = false;
+            Debug.Log(
+                $"[WaveManager] Wave {CurrentWave} 실패. 남은 몬스터 {returnedMonsterCount}마리를 반환했습니다.",
+                this);
         }
 
         private void StartSpawnProgress(float currentTime)
@@ -152,7 +182,7 @@ namespace ProjectOverdrive.Managers
             spawnManager.CancelPendingSpawns();
             ChangeStatus(WaveStatus.Wave_Clear);
             IsWaveRunning = false;
-            StartCoroutine(PlayWaveClearSequence());
+            _waveClearCoroutine = StartCoroutine(PlayWaveClearSequence());
         }
 
         private IEnumerator PlayWaveClearSequence()
@@ -171,6 +201,7 @@ namespace ProjectOverdrive.Managers
             }
 
             OpenShop();
+            _waveClearCoroutine = null;
         }
 
         private IEnumerator CollectAllCurrency(PlayerController playerController)
@@ -246,7 +277,11 @@ namespace ProjectOverdrive.Managers
 
             if (spawnManager == null) TryGetComponent(out spawnManager);
             if (waveClearUI == null) TryGetComponent(out waveClearUI);
-            if (player != null) player.TryGetComponent(out _playerController);
+            if (player != null)
+            {
+                player.TryGetComponent(out _playerController);
+                player.TryGetComponent(out _playerHealth);
+            }
         }
 
         private void ChangeStatus(WaveStatus status)
@@ -258,9 +293,12 @@ namespace ProjectOverdrive.Managers
 
         private bool ValidateConfiguration()
         {
-            if (player == null || _playerController == null || spawnManager == null || PoolingManager.Instance == null)
+            if (player == null || _playerController == null || _playerHealth == null
+                || spawnManager == null || PoolingManager.Instance == null)
             {
-                Debug.LogError("[WaveManager] PlayerController, SpawnManager, PoolingManager가 필요합니다.", this);
+                Debug.LogError(
+                    "[WaveManager] PlayerController, PlayerHealth, SpawnManager, PoolingManager가 필요합니다.",
+                    this);
                 return false;
             }
 
@@ -299,6 +337,14 @@ namespace ProjectOverdrive.Managers
             waveStartDelay = Mathf.Max(0f, waveStartDelay);
             currencyCollectionDuration = Mathf.Max(0.01f, currencyCollectionDuration);
             waves ??= new WaveData[0];
+        }
+
+        private void OnDestroy()
+        {
+            if (_playerHealth != null)
+            {
+                _playerHealth.OnDied -= FailWave;
+            }
         }
     }
 }

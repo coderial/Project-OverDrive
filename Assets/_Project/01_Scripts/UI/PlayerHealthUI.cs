@@ -1,5 +1,6 @@
 using System.Globalization;
 using ProjectOverdrive.Controllers;
+using ProjectOverdrive.Managers;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,7 +17,7 @@ namespace ProjectOverdrive.UI
         [Header("Screen HUD")]
         [SerializeField] private TMP_Text healthText;
         [SerializeField] private RectTransform screenFill;
-        [SerializeField] private GameObject root;
+        [SerializeField] private GameObject hudRoot;
 
         [Header("World Bar")]
         [SerializeField] private Transform worldBarTransform;
@@ -24,8 +25,10 @@ namespace ProjectOverdrive.UI
         [Tooltip("월드 Z축 기준 위치 오프셋입니다. 탑다운 카메라에서는 양수가 화면 위쪽입니다.")]
         [SerializeField, Range(-3f, 3f)] private float worldZOffset = 1.2f;
         [SerializeField] private RectTransform worldFill;
+        [SerializeField] private GameObject worldbarRoot;
 
-        private PlayerController _player;
+        private PlayerHealth _player;
+        private WaveManager _waveManager;
         private Image _screenFillImage;
         private Image _worldFillImage;
         private Camera _camera;
@@ -35,21 +38,28 @@ namespace ProjectOverdrive.UI
             _screenFillImage = screenFill != null ? screenFill.GetComponent<Image>() : null;
             _worldFillImage = worldFill != null ? worldFill.GetComponent<Image>() : null;
             RefreshHealth(0, 0);
+            SetHudVisible(false);
             SetWorldBarVisible(false);
         }
 
         private void OnEnable()
         {
+            ResolveWaveManager();
             BindToPlayer();
+            RefreshHudVisibility();
         }
 
         private void Update()
         {
+            ResolveWaveManager();
+
             if (_player == null)
             {
                 SetWorldBarVisible(false);
                 BindToPlayer();
             }
+
+            RefreshHudVisibility();
         }
 
         private void LateUpdate()
@@ -76,12 +86,13 @@ namespace ProjectOverdrive.UI
         private void OnDisable()
         {
             UnbindFromPlayer();
+            SetHudVisible(false);
             SetWorldBarVisible(false);
         }
 
         private void BindToPlayer()
         {
-            PlayerController foundPlayer = FindFirstObjectByType<PlayerController>();
+            PlayerHealth foundPlayer = FindFirstObjectByType<PlayerHealth>();
             if (foundPlayer == null || foundPlayer == _player)
             {
                 return;
@@ -92,6 +103,7 @@ namespace ProjectOverdrive.UI
             _player.OnHpChanged += RefreshHealth;
             SetWorldBarVisible(true);
             RefreshHealth(_player.CurrentHp, _player.MaxHp);
+            RefreshHudVisibility();
         }
 
         private void UnbindFromPlayer()
@@ -104,6 +116,28 @@ namespace ProjectOverdrive.UI
             _player = null;
         }
 
+        private void ResolveWaveManager()
+        {
+            if (_waveManager == null)
+            {
+                _waveManager = FindFirstObjectByType<WaveManager>();
+            }
+        }
+
+        private void RefreshHudVisibility()
+        {
+            bool isWaveInProgress = _player != null && _waveManager != null;// && _waveManager.CurrentStatus == WaveStatus.Spawn_Progress;
+            SetHudVisible(isWaveInProgress && (_waveManager.CurrentStatus == WaveStatus.Spawn_Progress || _waveManager.CurrentStatus == WaveStatus.Preparation));
+        }
+
+        private void SetHudVisible(bool visible)
+        {
+            if (hudRoot != null && hudRoot.activeSelf != visible)
+            {
+                hudRoot.SetActive(visible);
+            }
+        }
+
         private void SetWorldBarVisible(bool visible)
         {
             if (worldBarTransform != null && worldBarTransform.gameObject.activeSelf != visible)
@@ -114,12 +148,6 @@ namespace ProjectOverdrive.UI
 
         private void RefreshHealth(int currentHp, int maxHp)
         {
-            if (currentHp == maxHp)
-            {
-                root.SetActive(false);
-                return;
-            }
-            root.SetActive(true);
             int safeMaxHp = Mathf.Max(0, maxHp);
             int safeCurrentHp = Mathf.Clamp(currentHp, 0, safeMaxHp);
             float ratio = safeMaxHp > 0 ? (float)safeCurrentHp / safeMaxHp : 0f;
@@ -145,6 +173,11 @@ namespace ProjectOverdrive.UI
             if (_worldFillImage != null)
             {
                 _worldFillImage.color = healthColor;
+            }
+
+            if (worldbarRoot != null)
+            {
+                worldbarRoot.SetActive(safeCurrentHp < safeMaxHp);
             }
         }
 
